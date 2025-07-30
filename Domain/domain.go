@@ -13,6 +13,6 @@ type Blog struct {
 	Title   string
 	Content string
 	Owner   User
-	Tags    []string
+	Tags    string
 	Date    string
 }
