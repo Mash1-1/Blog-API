@@ -3,6 +3,7 @@ package Repositories
 import (
 	"blog_api/Domain"
 	"context"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,9 +14,7 @@ type BlogRepository struct {
 	Database *mongo.Collection
 }
 
-type BlogRepositoryI interface {
-	Create(Domain.Blog) error
-}
+type BlogRepositoryI interface{}
 
 func NewBlogRepository(db *mongo.Collection) *BlogRepository {
 	return &BlogRepository{
@@ -97,8 +96,35 @@ func InitializeBlogDB() (*mongo.Collection, error) {
 	collection.DeleteMany(context.TODO(), bson.D{{}})
 	return collection, nil
 }
-
 func (BlgRepo *BlogRepository) Create(blog Domain.Blog) error {
 	_, err := BlgRepo.Database.InsertOne(context.TODO(), blog)
 	return err
+}
+
+func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
+	// Use blog id to search and update task
+	filter := bson.D{{Key: "id", Value: updatedBlog.ID}}
+	updatedBSON := bson.M{}
+
+	// Find updatable fields
+	if updatedBlog.Title != "" {
+		updatedBSON["title"] = updatedBlog.Title
+	}
+	if updatedBlog.Content != "" {
+		updatedBSON["content"] = updatedBlog.Content
+	}
+	if updatedBlog.Tags != "" {
+		updatedBSON["tags"] = updatedBlog.Tags
+	}
+	update := bson.M{"$set": updatedBSON}
+	// Do update operation in database
+	updatedRes, err := BlgRepo.Database.UpdateOne(context.TODO(), filter, update)
+	// Handle exceptions
+	if err != nil {
+		return err
+	}
+	if updatedRes.MatchedCount == 0 {
+		return errors.New("blog not found")
+	}
+	return nil
 }

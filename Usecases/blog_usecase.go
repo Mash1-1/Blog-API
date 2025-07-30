@@ -3,6 +3,7 @@ package usecases
 import (
 	"blog_api/Domain"
 	"blog_api/Repositories"
+	"errors"
 )
 
 type BlogUseCase struct {
@@ -10,6 +11,7 @@ type BlogUseCase struct {
 }
 type BlogUseCaseI interface {
 	CreateBlog(Domain.Blog) error
+	UpdateBlogUC(Domain.Blog) error
 }
 
 func NewBlogUseCase(Repo Repositories.BlogRepositoryI) *BlogUseCase {
@@ -21,4 +23,13 @@ func NewBlogUseCase(Repo Repositories.BlogRepositoryI) *BlogUseCase {
 func (BlgUseCase *BlogUseCase) CreateBlog(blog Domain.Blog) error {
 	err := BlgUseCase.Repository.Create(blog)
 	return err
+}
+
+func (BlgUC *BlogUseCase) UpdateBlogUC(updatedBlog Domain.Blog) error {
+	tmp := Domain.Blog{}
+	// Handle empty blog update
+	if updatedBlog == tmp {
+		return errors.New("can't update into empty blog")
+	}
+	return BlgUC.Repository.UpdateBlog(&updatedBlog)
 }
