@@ -16,3 +16,8 @@ type Blog struct {
 	Tags    string
 	Date    string
 }
+
+type BlogRepositoryI interface {
+	Create(blog *Blog) error
+	UpdateBlog(updatedBlog *Blog) error
+}

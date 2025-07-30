@@ -14,8 +14,6 @@ type BlogRepository struct {
 	Database *mongo.Collection
 }
 
-type BlogRepositoryI interface{}
-
 func NewBlogRepository(db *mongo.Collection) *BlogRepository {
 	return &BlogRepository{
 		Database: db,
@@ -36,9 +34,9 @@ func InitializeBlogDB() (*mongo.Collection, error) {
 		"$jsonSchema": bson.M{
 			"bsonType": "object",
 			"title":    "Blog object Validation",
-			"required": []string{"_id", "title", "content", "owner"},
+			"required": []string{"id", "title", "content", "owner"},
 			"properties": bson.M{
-				"_id": bson.M{
+				"id": bson.M{
 					"bsonType": "objectId",
 				},
 				"title": bson.M{
@@ -96,7 +94,7 @@ func InitializeBlogDB() (*mongo.Collection, error) {
 	collection.DeleteMany(context.TODO(), bson.D{{}})
 	return collection, nil
 }
-func (BlgRepo *BlogRepository) Create(blog Domain.Blog) error {
+func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
 	_, err := BlgRepo.Database.InsertOne(context.TODO(), blog)
 	return err
 }

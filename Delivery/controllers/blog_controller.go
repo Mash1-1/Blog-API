@@ -28,6 +28,22 @@ func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
 	}
 }
 
+func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
+	var blog BlogDTO
+	err := c.ShouldBind(&blog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// validate if the user is authorized and authenticated
+	err = BlgCtrl.UseCase.CreateBlogUC(BlgCtrl.ChangeToDomain(blog))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": "blog created successfully"})
+}
+
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	var updated_blog BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)
