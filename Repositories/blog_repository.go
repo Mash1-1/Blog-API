@@ -14,39 +14,99 @@ type BlogRepository struct {
 	Database *mongo.Collection
 }
 
-type BlogRepositoryI interface {
-	UpdateBlog(updatedBlog *Domain.Blog) error
-}
-
-func NewBlogRepository(db *mongo.Collection) *BlogRepository{
+func NewBlogRepository(db *mongo.Collection) *BlogRepository {
 	return &BlogRepository{
 		Database: db,
 	}
 }
 
-func InitializeBlogDB() (*mongo.Collection, error){
+func InitializeBlogDB() (*mongo.Collection, error) {
 	// Initialize collection
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
 	if err != nil {
-		return &mongo.Collection{}, err 
+		return &mongo.Collection{}, err
+	}
+	db := client.Database("Blog_DB")
+
+	validator := bson.M{
+		"$jsonSchema": bson.M{
+			"bsonType": "object",
+			"title":    "Blog object Validation",
+			"required": []string{"id", "title", "content", "owner"},
+			"properties": bson.M{
+				"id": bson.M{
+					"bsonType": "objectId",
+				},
+				"title": bson.M{
+					"bsonType":    "string",
+					"description": "Name must be a string of lenght 20 and is a required field",
+					"maxLength":   20,
+				},
+				"content": bson.M{
+					"bsonType":    "string",
+					"minLength":   20,
+					"description": "content must be a string with minimum length of 20 characters",
+				},
+				"owner": bson.M{
+					"bsonType":    "object",
+					"description": "owner is User type with fields",
+					"required":    []string{"username", "email", "password", "role"},
+					"properties": bson.M{
+						"username": bson.M{
+							"bsonType":    "string",
+							"maxLength":   20,
+							"description": "username should be length of less than 20 characters",
+						},
+						"email": bson.M{
+							"bsonType":  "string",
+							"minLength": 8,
+							"pattern":   `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`,
+						},
+						"password": bson.M{
+							"bsonType":  "string",
+							"minLength": 8,
+							"maxLength": 20,
+							"pattern": `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$%\^&\*])[A-Za-z\d!@#\$%\^&\*]{8,}$
+`,
+						},
+						"role": bson.M{
+							"bsonType":    "string",
+							"enum":        []string{"user", "admin"},
+							"description": "Role must be one of 'admin',or 'user'",
+						},
+					},
+				},
+			},
+		},
 	}
 
-	collection := client.Database("Blog_DB").Collection("blogs")
+	opts := options.CreateCollection().SetValidator(validator)
+
+	err = db.CreateCollection(context.TODO(), "blogs", opts)
+	if err != nil {
+		return nil, err
+	}
+
+	collection := db.Collection("blogs")
 	// Clear previous usageleftover data
 	collection.DeleteMany(context.TODO(), bson.D{{}})
 	return collection, nil
 }
+func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
+	_, err := BlgRepo.Database.InsertOne(context.TODO(), blog)
+	return err
+}
 
 func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
-	// Use blog id to search and update task 
+	// Use blog id to search and update task
 	filter := bson.D{{Key: "id", Value: updatedBlog.ID}}
 	updatedBSON := bson.M{}
 
 	// Find updatable fields
 	if updatedBlog.Title != "" {
-		updatedBSON["title"] = updatedBlog.Title 
+		updatedBSON["title"] = updatedBlog.Title
 	}
 	if updatedBlog.Content != "" {
 		updatedBSON["content"] = updatedBlog.Content
@@ -54,7 +114,7 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	if updatedBlog.Tags != "" {
 		updatedBSON["tags"] = updatedBlog.Tags
 	}
-	update := bson.M{"$set" : updatedBSON}
+	update := bson.M{"$set": updatedBSON}
 	// Do update operation in database
 	updatedRes, err := BlgRepo.Database.UpdateOne(context.TODO(), filter, update)
 	// Handle exceptions

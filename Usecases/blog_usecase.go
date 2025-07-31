@@ -2,21 +2,26 @@ package usecases
 
 import (
 	"blog_api/Domain"
-	"blog_api/Repositories"
 	"errors"
 )
 
 type BlogUseCase struct {
-	Repository Repositories.BlogRepositoryI
+	Repository Domain.BlogRepositoryI
 }
 type BlogUseCaseI interface {
+	CreateBlogUC(Domain.Blog) error
 	UpdateBlogUC(Domain.Blog) error
 }
 
-func NewBlogUseCase(Repo Repositories.BlogRepositoryI) *BlogUseCase {
+func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
 	return &BlogUseCase{
 		Repository: Repo,
 	}
+}
+
+func (BlgUseCase *BlogUseCase) CreateBlogUC(blog Domain.Blog) error {
+	err := BlgUseCase.Repository.Create(&blog)
+	return err
 }
 
 func (BlgUC *BlogUseCase) UpdateBlogUC(updatedBlog Domain.Blog) error {

@@ -12,7 +12,8 @@ func SetupRouter(BlogCtrl *controllers.BlogController) {
 
 	// Set endpoints
 	router.PUT("/update_blog", BlogCtrl.UpdateBlogController)
+	router.POST("/create_blog", BlogCtrl.CreateBlogController)
 
-	// Run the router 
+	// Run the router
 	router.Run()
 }
