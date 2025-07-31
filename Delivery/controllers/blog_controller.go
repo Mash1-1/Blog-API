@@ -45,6 +45,26 @@ func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message: ": "blog created successfully"})
 }
 
+func (BlgCtrl *BlogController) SearchBlogController(c * gin.Context) {
+	var SearchBlog BlogDTO
+	err := c.ShouldBindJSON(&SearchBlog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+	// Validate request using usecase
+	blogs, err := BlgCtrl.UseCase.SearchBlogUC(BlgCtrl.ChangeToDomain(SearchBlog))
+	if err != nil {
+		if err.Error() == "can't update into empty blog" {
+			c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+			return 
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+	c.JSON(http.StatusOK, gin.H{"Blogs found" : blogs})
+}
+
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	var updated_blog BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)

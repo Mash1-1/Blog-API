@@ -99,6 +99,37 @@ func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
 	return err
 }
 
+func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blog, error) {
+	// Use filter to search for tasks with the given fields
+	searchBSON := bson.M{}
+	blogs := []Domain.Blog{}
+	if searchBlog.Title != "" {
+		searchBSON["title"] = searchBlog.Title
+	}
+	var tmp = Domain.User{}
+	if searchBlog.Owner != tmp {
+		searchBSON["owner"] = searchBlog.Owner
+	}
+
+	search := bson.M{"$set" : searchBSON}
+	cursor, err := BlgRepo.Database.Find(context.TODO(), search)
+	if err != nil {
+		return []Domain.Blog{}, err
+	}
+	for cursor.Next(context.TODO()) {
+		var elem Domain.Blog
+		err = cursor.Decode(&elem)
+		if err != nil {
+			return []Domain.Blog{}, err 
+		}
+		blogs = append(blogs, elem)
+	}
+	if err = cursor.Err(); err != nil {
+		return []Domain.Blog{}, err 
+	}
+	return blogs, nil
+}
+
 func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	// Use blog id to search and update task
 	filter := bson.D{{Key: "id", Value: updatedBlog.ID}}
