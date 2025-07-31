@@ -111,7 +111,7 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	if updatedBlog.Content != "" {
 		updatedBSON["content"] = updatedBlog.Content
 	}
-	if updatedBlog.Tags != "" {
+	if updatedBlog.Tags != nil {
 		updatedBSON["tags"] = updatedBlog.Tags
 	}
 	update := bson.M{"$set": updatedBSON}

@@ -4,6 +4,7 @@ import (
 	"blog_api/Domain"
 	usecases "blog_api/Usecases"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,8 +19,8 @@ type BlogDTO struct {
 	Title   string      `json:"title"`
 	Content string      `json:"content"`
 	Owner   Domain.User `json:"owner"`
-	Tags    string      `json:"tags"`
-	Date    string      `json:"date"`
+	Tags    []string      `json:"tags"`
+	Date    time.Time      `json:"date"`
 }
 
 func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {

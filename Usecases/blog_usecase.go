@@ -25,9 +25,8 @@ func (BlgUseCase *BlogUseCase) CreateBlogUC(blog Domain.Blog) error {
 }
 
 func (BlgUC *BlogUseCase) UpdateBlogUC(updatedBlog Domain.Blog) error {
-	tmp := Domain.Blog{}
 	// Handle empty blog update
-	if updatedBlog == tmp {
+	if updatedBlog.Content == "" && updatedBlog.Title == "" && updatedBlog.Tags == nil {
 		return errors.New("can't update into empty blog")
 	}
 	return BlgUC.Repository.UpdateBlog(&updatedBlog)
