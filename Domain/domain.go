@@ -1,5 +1,7 @@
 package Domain
 
+import "time"
+
 type User struct {
 	Username string
 	Email    string
@@ -13,8 +15,8 @@ type Blog struct {
 	Title   string
 	Content string
 	Owner   User
-	Tags    string
-	Date    string
+	Tags    []string
+	Date    time.Time
 }
 
 type BlogRepositoryI interface {
