@@ -94,6 +94,7 @@ func InitializeBlogDB() (*mongo.Collection, error) {
 	collection.DeleteMany(context.TODO(), bson.D{{}})
 	return collection, nil
 }
+
 func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
 	_, err := BlgRepo.Database.InsertOne(context.TODO(), blog)
 	return err
@@ -125,4 +126,29 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 		return errors.New("blog not found")
 	}
 	return nil
+}
+
+func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog, error) {
+	findOptions := options.Find()
+
+	findOptions.SetLimit(int64(limit))
+	findOptions.SetSkip(int64(offset))
+
+	result, err := BlgRepo.Database.Find(context.TODO(), findOptions)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var blogs []Domain.Blog
+
+	for result.Next(context.TODO()) {
+		var blog Domain.Blog
+		if err := result.Decode(&blog); err != nil {
+			return nil, err
+		}
+		blogs = append(blogs, blog)
+	}
+
+	return blogs, nil
 }

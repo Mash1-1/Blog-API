@@ -1,12 +1,14 @@
 package controllers
 
 import (
-	"blog_api/Domain"
-	usecases "blog_api/Usecases"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"blog_api/Domain"
+	usecases "blog_api/Usecases"
 )
 
 type BlogController struct {
@@ -19,8 +21,8 @@ type BlogDTO struct {
 	Title   string      `json:"title"`
 	Content string      `json:"content"`
 	Owner   Domain.User `json:"owner"`
-	Tags    []string      `json:"tags"`
-	Date    time.Time      `json:"date"`
+	Tags    []string    `json:"tags"`
+	Date    time.Time   `json:"date"`
 }
 
 func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
@@ -81,4 +83,30 @@ func (BlgCtrl *BlogController) ChangeToDomain(b BlogDTO) Domain.Blog {
 		Tags:    b.Tags,
 	}
 	return blog
+}
+
+func (BlgCtrl *BlogController) GetAllBlogController(c *gin.Context) {
+	limitStr := c.DefaultQuery("limit", "10")
+	offsetStr := c.DefaultQuery("offset", "0")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid limit value"})
+		return
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid offset value"})
+		return
+	}
+
+	blogs, err := BlgCtrl.UseCase.GetAllBlogUC(int(limit), int(offset))
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"blogs": blogs})
 }

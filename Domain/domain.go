@@ -22,4 +22,5 @@ type Blog struct {
 type BlogRepositoryI interface {
 	Create(blog *Blog) error
 	UpdateBlog(updatedBlog *Blog) error
+	GetAllBlogs(limit int, offset int) ([]Blog, error)
 }

@@ -11,6 +11,7 @@ type BlogUseCase struct {
 type BlogUseCaseI interface {
 	CreateBlogUC(Domain.Blog) error
 	UpdateBlogUC(Domain.Blog) error
+	GetAllBlogUC(limit int, offset int) ([]Domain.Blog, error)
 }
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
@@ -30,4 +31,8 @@ func (BlgUC *BlogUseCase) UpdateBlogUC(updatedBlog Domain.Blog) error {
 		return errors.New("can't update into empty blog")
 	}
 	return BlgUC.Repository.UpdateBlog(&updatedBlog)
+}
+
+func (BlgUseCase *BlogUseCase) GetAllBlogUC(limit int, offset int) ([]Domain.Blog, error) {
+	return BlgUseCase.Repository.GetAllBlogs(limit, offset)
 }
