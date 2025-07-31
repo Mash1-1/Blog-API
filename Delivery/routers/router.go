@@ -11,10 +11,13 @@ func SetupRouter(BlogCtrl *controllers.BlogController) {
 	router := gin.Default()
 
 	// Set endpoints
-	router.PUT("/update_blog", BlogCtrl.UpdateBlogController)
-	router.POST("/create_blog", BlogCtrl.CreateBlogController)
-	router.GET("/search_blog", BlogCtrl.SearchBlogController)
-	router.DELETE("/delete_blog/:id", BlogCtrl.DeleteBlogController)
+	blogRoutes := router.Group("/blog")
+	{
+		blogRoutes.GET("/", BlogCtrl.GetAllBlogController)
+		blogRoutes.POST("/", BlogCtrl.CreateBlogController)
+		blogRoutes.PUT("/", BlogCtrl.UpdateBlogController)
+    blogRoutes.DELETE("/:id", BlogCtrl.DeleteBlogController)
+	}
 
 	// Run the router
 	router.Run()
