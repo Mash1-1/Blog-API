@@ -5,15 +5,14 @@ import (
 	"blog_api/Delivery/routers"
 	"blog_api/Repositories"
 	usecases "blog_api/Usecases"
-	"fmt"
+	"log"
 )
 
 func main() {
 	// Initialize controllers and router
 	blog_database, err := Repositories.InitializeBlogDB()
 	if err != nil {
-		fmt.Println("Failed while creating blog database!")
-		return 
+		log.Fatalln("Failed while creating blog database!", err)
 	}
 	blog_repo := Repositories.NewBlogRepository(blog_database)
 	blog_usecase := usecases.NewBlogUseCase(blog_repo)

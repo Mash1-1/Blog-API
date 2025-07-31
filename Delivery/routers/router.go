@@ -14,6 +14,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController) {
 	router.PUT("/update_blog", BlogCtrl.UpdateBlogController)
 	router.POST("/create_blog", BlogCtrl.CreateBlogController)
 	router.GET("/search_blog", BlogCtrl.SearchBlogController)
+	router.DELETE("/delete_blog/:id", BlogCtrl.DeleteBlogController)
 
 	// Run the router
 	router.Run()
