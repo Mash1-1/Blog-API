@@ -6,14 +6,12 @@ import (
 	"blog_api/Repositories"
 	usecases "blog_api/Usecases"
 	"fmt"
-	"log"
 )
 
 func main() {
 	// Initialize controllers and router
 	blog_database, err := Repositories.InitializeBlogDB()
 	if err != nil {
-		log.Fatalf("Mongo connection failed: %v", err)
 		fmt.Println("Failed while creating blog database!")
 		return
 	}

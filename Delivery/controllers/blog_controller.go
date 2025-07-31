@@ -32,14 +32,14 @@ func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
 }
 
 func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
-	var blog BlogDTO
+	var blog Domain.BlogDTO
 	err := c.ShouldBind(&blog)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	// validate if the user is authorized and authenticated
-	err = BlgCtrl.UseCase.CreateBlogUC(BlgCtrl.ChangeToDomain(blog))
+	err = BlgCtrl.UseCase.CreateBlogUC(blog.ToDomain())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -47,8 +47,28 @@ func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message: ": "blog created successfully"})
 }
 
+func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
+	var SearchBlog Domain.BlogDTO
+	err := c.ShouldBindJSON(&SearchBlog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// Validate request using usecase
+	blogs, err := BlgCtrl.UseCase.SearchBlogUC(SearchBlog.ToDomain())
+	if err != nil {
+		if err.Error() == "can't update into empty blog" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Blogs found": blogs})
+}
+
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
-	var updated_blog BlogDTO
+	var updated_blog Domain.BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)
 
 	// Handle binding errors
@@ -57,7 +77,7 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 		return
 	}
 	// Call usecase and handle different errors
-	err = BlgCtrl.UseCase.UpdateBlogUC(BlgCtrl.ChangeToDomain(updated_blog))
+	err = BlgCtrl.UseCase.UpdateBlogUC(updated_blog.ToDomain())
 	if err == nil {
 		c.JSON(http.StatusOK, gin.H{"message": "blog updated successfuly"})
 		return
@@ -73,16 +93,15 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
 
-func (BlgCtrl *BlogController) ChangeToDomain(b BlogDTO) Domain.Blog {
-	blog := Domain.Blog{
-		ID:      b.ID,
-		Date:    b.Date,
-		Title:   b.Title,
-		Owner:   b.Owner,
-		Content: b.Content,
-		Tags:    b.Tags,
+func (BlgCtrl *BlogController) DeleteBlogController(c *gin.Context) {
+	id := c.Param("id")
+
+	//validate if the user is owner or admin
+	if err := BlgCtrl.UseCase.DeleteBlogUC(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return blog
+	c.JSON(http.StatusOK, gin.H{"message: ": " blog deleted successfully"})
 }
 
 func (BlgCtrl *BlogController) GetAllBlogController(c *gin.Context) {
