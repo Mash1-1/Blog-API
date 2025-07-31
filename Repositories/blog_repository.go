@@ -119,8 +119,13 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 		searchBSON["Owner"] = searchBlog.Owner
 	}
 
-	search := bson.M{"$set": searchBSON}
-	cursor, err := BlgRepo.Database.Find(context.TODO(), search)
+	filter := bson.M{
+		"$or": []bson.M{
+			{"Title": searchBSON["Title"]},
+			{"Owner": searchBSON["Owner"]},
+		},
+	}
+	cursor, err := BlgRepo.Database.Find(context.TODO(), filter)
 	if err != nil {
 		return []Domain.Blog{}, err
 	}
