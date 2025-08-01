@@ -8,6 +8,7 @@ type User struct {
 	Password string
 	Bio      string
 	Role     string
+	Name 	 string
 }
 
 type Blog struct {
