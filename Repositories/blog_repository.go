@@ -178,7 +178,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 	findOptions.SetLimit(int64(limit))
 	findOptions.SetSkip(int64(offset))
 
-	result, err := BlgRepo.Database.Find(context.TODO(), findOptions)
+	result, err := BlgRepo.Database.Find(context.TODO(), bson.D{}, findOptions)
 
 	if err != nil {
 		return nil, err
@@ -193,6 +193,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 		}
 		blogs = append(blogs, blog)
 	}
+	log.Print(blogs)
 
 	return blogs, nil
 }
