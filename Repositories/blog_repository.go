@@ -110,21 +110,17 @@ func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
 
 func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blog, error) {
 	// Use filter to search for tasks with the given fields
-	searchBSON := bson.M{}
 	blogs := []Domain.Blog{}
+	filters := []bson.M{}
 	if searchBlog.Title != "" {
-		searchBSON["Title"] = searchBlog.Title
+		filters = append(filters, bson.M{"title": searchBlog.Title})
 	}
 	var tmp = Domain.User{}
 	if searchBlog.Owner != tmp {
-		searchBSON["Owner"] = searchBlog.Owner
+		filters = append(filters, bson.M{"owner" : searchBlog.Owner})
 	}
-
 	filter := bson.M{
-		"$or": []bson.M{
-			{"Title": searchBSON["Title"]},
-			{"Owner": searchBSON["Owner"]},
-		},
+		"$and": filters,
 	}
 	cursor, err := BlgRepo.Database.Find(context.TODO(), filter)
 	if err != nil {
