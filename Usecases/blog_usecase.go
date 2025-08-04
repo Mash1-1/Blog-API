@@ -15,6 +15,7 @@ type BlogUseCaseI interface {
 	SearchBlogUC(Domain.Blog) ([]Domain.Blog, error)
 	DeleteBlogUC(string) error
 	FilterBlogUC(Domain.Blog) ([]Domain.Blog, error)
+	GetByIdBlogUC(string) (Domain.Blog, error)
 }
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
@@ -56,4 +57,8 @@ func (BlgUC *BlogUseCase) DeleteBlogUC(id string) error {
 
 func (BlgUseCase *BlogUseCase) FilterBlogUC(filterBlog Domain.Blog) ([]Domain.Blog, error) {
 	return BlgUseCase.Repository.FilterBlog(&filterBlog)
+}
+
+func (BlgUseCase *BlogUseCase) GetByIdBlogUC(id string) (Domain.Blog, error) {
+	return BlgUseCase.Repository.GetBlog(id)
 }

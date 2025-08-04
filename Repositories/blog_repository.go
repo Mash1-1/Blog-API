@@ -156,6 +156,10 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	if updatedBlog.Tags != nil {
 		updatedBSON["Tags"] = updatedBlog.Tags
 	}
+	updatedBSON["Likes"] = updatedBlog.Likes
+	updatedBSON["Dislikes"] = updatedBlog.Dislikes
+	updatedBSON["ViewCount"] = updatedBlog.ViewCount
+	updatedBSON["Comments"] = updatedBlog.Comments
 	update := bson.M{"$set": updatedBSON}
 	// Do update operation in database
 	updatedRes, err := BlgRepo.Database.UpdateOne(context.TODO(), filter, update)
@@ -257,4 +261,14 @@ func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blo
 	}
 
 	return blogs, nil
+}
+
+func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
+	var blog Domain.Blog
+	filter := bson.D{{Key: "ID", Value: id}}
+	err := BlgRepo.Database.FindOne(context.TODO(), filter).Decode(&blog)
+	if err != nil {
+		return blog, errors.New("Document with id " + id + " not found")
+	}
+	return blog, nil
 }
