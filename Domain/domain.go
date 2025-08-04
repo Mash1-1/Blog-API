@@ -8,7 +8,6 @@ type User struct {
 	Password string
 	Bio      string
 	Role     string
-	Name 	 string
 }
 
 type Blog struct {
@@ -62,4 +61,5 @@ type BlogRepositoryI interface {
 	GetAllBlogs(limit int, offset int) ([]Blog, error)
 	SearchBlog(searchBlog *Blog) ([]Blog, error)
 	DeleteBlog(id string) error
+	FilterBlog(filterBlog *Blog) ([]Blog, error)
 }
