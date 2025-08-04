@@ -4,6 +4,7 @@ import (
 	"blog_api/Domain"
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -113,11 +114,11 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 	blogs := []Domain.Blog{}
 	filters := []bson.M{}
 	if searchBlog.Title != "" {
-		filters = append(filters, bson.M{"title": searchBlog.Title})
+		filters = append(filters, bson.M{"Title": searchBlog.Title})
 	}
 	var tmp = Domain.User{}
 	if searchBlog.Owner != tmp {
-		filters = append(filters, bson.M{"owner" : searchBlog.Owner})
+		filters = append(filters, bson.M{"Ogowner": searchBlog.Owner})
 	}
 	filter := bson.M{
 		"$and": filters,
@@ -219,4 +220,41 @@ func collectionExists(client *mongo.Database, collname string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blog, error) {
+	blogs := []Domain.Blog{}
+	filters := []bson.D{}
+
+	if !filterBlog.Date.IsZero() {
+		filters = append(filters, bson.D{{Key: "Date", Value: bson.D{{Key: "$eq", Value: filterBlog.Date}}}})
+	}
+	if len(filterBlog.Tags) > 0 {
+		filters = append(filters, bson.D{{Key: "Tags", Value: bson.D{{Key: "$in", Value: filterBlog.Tags}}}})
+	}
+
+	if len(filters) == 0 {
+		return nil, errors.New("at least one filter (date or tags) must be provided")
+	}
+
+	filter := bson.M{"$or": filters}
+	cursor, err := BlgRepo.Database.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find blogs: %w", err)
+	}
+
+	defer cursor.Close(context.TODO())
+	for cursor.Next(context.TODO()) {
+		var blog Domain.Blog
+		if err := cursor.Decode(&blog); err != nil {
+			return nil, fmt.Errorf("failed to decode blog: %w", err)
+		}
+		blogs = append(blogs, blog)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, fmt.Errorf("cursor error: %w", err)
+	}
+
+	return blogs, nil
 }

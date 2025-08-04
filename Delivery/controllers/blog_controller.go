@@ -129,3 +129,23 @@ func (BlgCtrl *BlogController) GetAllBlogController(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"blogs": blogs})
 }
+
+func (BlgCtrl *BlogController) FilterBlogController(c *gin.Context) {
+	var FilterBlog Domain.BlogDTO
+	err := c.ShouldBindJSON(&FilterBlog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if FilterBlog.Date.IsZero() && FilterBlog.Tags == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Both Date and Tags can't be empty"})
+		return
+	}
+	blogs, err := BlgCtrl.UseCase.FilterBlogUC(FilterBlog.ToDomain())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	// filter by popularity is not implemented
+	c.JSON(http.StatusOK, gin.H{"filtered blogs: ": blogs})
+}
