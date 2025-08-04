@@ -149,3 +149,86 @@ func (BlgCtrl *BlogController) FilterBlogController(c *gin.Context) {
 	// filter by popularity is not implemented
 	c.JSON(http.StatusOK, gin.H{"filtered blogs: ": blogs})
 }
+
+func (BlgCtrl *BlogController) GetBlogController(c *gin.Context) {
+	id := c.Param("id")
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error: ": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Blog: ": blog})
+}
+
+func (BlgCtrl *BlogController) LikeBlogController(c *gin.Context) {
+	id := c.Param("id")
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	// check if the user have liked the post previously
+	blog.Likes += 1
+	err = BlgCtrl.UseCase.UpdateBlogUC(blog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": "liked"})
+}
+
+func (BlgCtrl *BlogController) DisLikeBlogController(c *gin.Context) {
+	id := c.Param("id")
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	// check if the user have disliked the post previously
+	blog.Dislikes += 1
+	err = BlgCtrl.UseCase.UpdateBlogUC(blog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": "Disliked"})
+}
+
+func (BlgCtrl *BlogController) ViewBlogController(c *gin.Context) {
+	id := c.Param("id")
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	// check if the user have viewed the post previously
+	blog.ViewCount += 1
+	err = BlgCtrl.UseCase.UpdateBlogUC(blog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": "View increased"})
+}
+
+func (BlgCtrl *BlogController) CommentsBlogController(c *gin.Context) {
+	var comment string
+	err := c.BindJSON(&comment)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"error: ": err.Error()})
+		return
+	}
+	id := c.Param("id")
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	blog.Comments = append(blog.Comments, comment)
+	err = BlgCtrl.UseCase.UpdateBlogUC(blog)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": "comment added"})
+}
