@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(BlogCtrl *controllers.BlogController) {
+func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.UserController) {
 	// Initialize a new router
 	router := gin.Default()
 
@@ -26,6 +26,10 @@ func SetupRouter(BlogCtrl *controllers.BlogController) {
 		blogRoutes.POST("/:id/comments", BlogCtrl.CommentsBlogController)
 	}
 
+	userRoutes := router.Group("/user")
+	{
+		userRoutes.POST("/", UserCtrl.RegisterController)
+	}
 	// Run the router
 	router.Run()
 }
