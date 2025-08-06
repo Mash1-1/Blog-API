@@ -1,6 +1,8 @@
 package Domain
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	Username string
@@ -8,6 +10,9 @@ type User struct {
 	Password string
 	Bio      string
 	Role     string
+	Verfied  bool
+	OTP      string
+	OTPTime  time.Time
 }
 
 type Blog struct {
@@ -82,16 +87,28 @@ type BlogRepositoryI interface {
 }
 
 type UserRepositoryI interface {
-	CheckExistence(email string) bool
+	CheckExistence(email string) error
 	Register(user *User) error
+	GetUser(user *User) (*User, error)
+	UpdateUser(user *User) error
+	DeleteUser(email string) error
 }
 
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
+	VerifyOTPUsecase(user *User) error
 }
 
 type PasswordServiceI interface {
 	HashPassword(password string) ([]byte, error)
+}
+
+type MailerI interface {
+	SendOTPEmail(toEmail, otp string) error
+}
+
+type GeneratorI interface {
+	GenerateOTP() string
 }
 
 type ChatRequest struct {

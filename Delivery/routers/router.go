@@ -30,6 +30,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 	userRoutes := router.Group("/user")
 	{
 		userRoutes.POST("/", UserCtrl.RegisterController)
+		userRoutes.POST("/verify-otp", UserCtrl.VerifyOTPController)
 	}
 	// Run the router
 	router.Run()

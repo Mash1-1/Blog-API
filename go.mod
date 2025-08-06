@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-resty/resty/v2 v2.16.5
+	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/crypto v0.31.0
 )
