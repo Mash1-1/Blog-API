@@ -3,19 +3,23 @@ package usecases
 import (
 	"blog_api/Domain"
 	"errors"
-	"log"
+	"time"
 	"unicode"
 )
 
 type UserUsecase struct {
 	repo Domain.UserRepositoryI
 	pass_serv Domain.PasswordServiceI
+	mailer Domain.MailerI
+	otpGen Domain.GeneratorI
 }
 
-func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI) UserUsecase {
+func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI, mailr Domain.MailerI, og Domain.GeneratorI) UserUsecase {
 	return UserUsecase{
 		repo: r,
 		pass_serv: ps,
+		mailer: mailr,
+		otpGen: og,
 	}
 }
 
@@ -24,18 +28,47 @@ func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	if !isValidEmail(user.Email) || !isValidPassword(user.Password){
 		return errors.New("invalid email")
 	}
-	if uc.repo.CheckExistence(user.Email) {
+	if uc.repo.CheckExistence(user.Email) == nil {
 		return errors.New("email already exists in database")
 	}
-	log.Print("Password : " + user.Password)
 	new_p, err := uc.pass_serv.HashPassword(user.Password)
 	if err != nil {
 		return err 
 	}
-	log.Print("Hashed password: " + string(new_p))
+	if !user.Verfied {
+		otp := uc.otpGen.GenerateOTP()
+		user.OTP = otp 
+		user.OTPTime = time.Now()
+		err = uc.mailer.SendOTPEmail(user.Email, otp)
+		if err != nil {
+			return  errors.New("error while sending otp email")
+		}
+	}
 	user.Password = string(new_p)
-	uc.repo.Register(user)
-	return nil
+	return uc.repo.Register(user)
+}
+
+func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
+	existingUser, err := uc.repo.GetUser(user)
+	if err != nil {
+		return errors.New("user not found")
+	}
+	if (user.OTPTime.Sub(existingUser.OTPTime)).Seconds() > 5 {
+		err := uc.repo.DeleteUser(existingUser.Email)
+		if err != nil {
+			return err
+		}
+		return errors.New("expired otp code please register again")
+	}
+	if (user.OTP != existingUser.OTP) {
+		err := uc.repo.DeleteUser(existingUser.Email)
+		if err != nil {
+			return err
+		}
+		return  errors.New("invalid otp code, please register again")
+	}
+	existingUser.Verfied = true
+	return uc.repo.UpdateUser(existingUser)
 }
 
 // email validation function
