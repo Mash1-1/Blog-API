@@ -3,6 +3,7 @@ package usecases
 import (
 	"blog_api/Domain"
 	"errors"
+	"log"
 	"time"
 	"unicode"
 )
@@ -12,14 +13,16 @@ type UserUsecase struct {
 	pass_serv Domain.PasswordServiceI
 	mailer Domain.MailerI
 	otpGen Domain.GeneratorI
+	jwtServ Domain.JwtServI
 }
 
-func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI, mailr Domain.MailerI, og Domain.GeneratorI) UserUsecase {
+func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI, mailr Domain.MailerI, og Domain.GeneratorI, jt Domain.JwtServI) UserUsecase {
 	return UserUsecase{
 		repo: r,
 		pass_serv: ps,
 		mailer: mailr,
 		otpGen: og,
+		jwtServ: jt,
 	}
 }
 
@@ -41,6 +44,7 @@ func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 		user.OTPTime = time.Now()
 		err = uc.mailer.SendOTPEmail(user.Email, otp)
 		if err != nil {
+			log.Print(err.Error())
 			return  errors.New("error while sending otp email")
 		}
 	}
@@ -48,12 +52,25 @@ func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	return uc.repo.Register(user)
 }
 
+func (uc UserUsecase) LoginUsecase(user *Domain.User) (string, error) {
+	existingUser, err := uc.repo.GetUser(user)
+	if err != nil {
+		return "", errors.New("user not found")
+	}
+
+	if !uc.pass_serv.Compare(existingUser.Password, user.Password) {
+		return "", errors.New("invalid password or email")
+	}
+	// Get token using jwt
+	return uc.jwtServ.CreateToken(*user)
+}
+
 func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
 	existingUser, err := uc.repo.GetUser(user)
 	if err != nil {
 		return errors.New("user not found")
 	}
-	if (user.OTPTime.Sub(existingUser.OTPTime)).Seconds() > 5 {
+	if (user.OTPTime.Sub(existingUser.OTPTime)).Minutes() > 5 {
 		err := uc.repo.DeleteUser(existingUser.Email)
 		if err != nil {
 			return err
