@@ -32,10 +32,27 @@ func InitializeUserDB() (*mongo.Collection, error){
 	return collection, nil
 }
 
-func (usRepo *UserRepository) CheckExistence(email string) bool {
+func (usRepo *UserRepository) CheckExistence(email string) error {
 	var existingUser Domain.User
-	err := usRepo.database.FindOne(context.TODO(), bson.M{"email" : email}).Decode(&existingUser)
-	return err == nil
+	return usRepo.database.FindOne(context.TODO(), bson.M{"email" : email}).Decode(&existingUser)
+}
+
+func (usRepo *UserRepository) GetUser(user *Domain.User) (*Domain.User, error) {
+	var existingUser Domain.User 
+	err := usRepo.database.FindOne(context.TODO(), bson.M{"email" : user.Email}).Decode(&existingUser)
+	return &existingUser, err 
+}
+
+func (usRepo *UserRepository) UpdateUser(user *Domain.User) error {
+	updateFields := bson.M{"verified" : true}
+	updateBSON := bson.D{{Key: "$set", Value: updateFields}}
+	_, err := usRepo.database.UpdateOne(context.TODO(), bson.M{"email" : user.Email}, updateBSON)
+	return err
+}
+
+func (usRepo *UserRepository) DeleteUser(email string) error {
+	_, err := usRepo.database.DeleteMany(context.TODO(), bson.M{"email" : email})
+	return err 
 }
 
 func (usRepo *UserRepository) Register(user *Domain.User) (error) {
