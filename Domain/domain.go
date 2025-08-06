@@ -97,14 +97,20 @@ type UserRepositoryI interface {
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
 	VerifyOTPUsecase(user *User) error
-}
+	LoginUsecase(user *User) (string, error)
+} 
 
 type PasswordServiceI interface {
 	HashPassword(password string) ([]byte, error)
+	Compare(hashed, newP string) bool
 }
 
 type MailerI interface {
 	SendOTPEmail(toEmail, otp string) error
+}
+
+type JwtServI interface {
+	CreateToken(user User) (string, error)
 }
 
 type GeneratorI interface {

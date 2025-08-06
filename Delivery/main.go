@@ -41,11 +41,12 @@ func main() {
 	Pass := os.Getenv("SMTP_PASSWORD")
 	frm := os.Getenv("SMTP_FROM")
 
+	j_serv := infrastructure.Jwt_serv{}
 	generator_otp := infrastructure.Generator{}
 	password_service := infrastructure.PasswordService{}
 	mailr := infrastructure.NewMailer(Host, Port, Username, Pass, frm)
 	user_repo := Repositories.NewUserRepository(user_database)
-	user_usecase := usecases.NewUserUsecase(user_repo, password_service, &mailr, generator_otp)
+	user_usecase := usecases.NewUserUsecase(user_repo, password_service, &mailr, generator_otp, j_serv)
 	user_controller := controllers.NewUserController(user_usecase)
 
 	routers.SetupRouter(blog_controller, &user_controller)

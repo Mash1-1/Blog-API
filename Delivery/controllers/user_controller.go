@@ -29,6 +29,29 @@ func NewUserController(uc Domain.UserUsecaseI) UserController {
 	}
 }
 
+func (UsrCtrl *UserController) LoginController(c *gin.Context) {
+	var user UserDTO 
+	if c.ShouldBindJSON(&user) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error" : "invalid json format"})
+		return 
+	} 
+
+	token, err := UsrCtrl.usecase.LoginUsecase(UsrCtrl.ChangeToDomain(user))
+	if err != nil {
+		if err.Error() == "invalid password or email" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error" : err.Error()})
+			return 
+		}
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusNotFound, gin.H{"message" : "user not found"})
+			return 
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+	c.JSON(http.StatusOK, gin.H{"message" : "logged in successfully", "token" : token})
+}
+
 func (UsrCtrl *UserController) RegisterController(c *gin.Context) {
 	var user UserDTO
 	err := c.ShouldBind(&user)
