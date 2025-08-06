@@ -11,8 +11,8 @@ type User struct {
 	Bio      string
 	Role     string
 	Verfied  bool
-	OTP string 
-	OTPTime time.Time
+	OTP      string
+	OTPTime  time.Time
 }
 
 type Blog struct {
@@ -88,7 +88,7 @@ type BlogRepositoryI interface {
 
 type UserRepositoryI interface {
 	CheckExistence(email string) error
-	Register(user *User) (error)
+	Register(user *User) error
 	GetUser(user *User) (*User, error)
 	UpdateUser(user *User) error
 	DeleteUser(email string) error
@@ -97,7 +97,7 @@ type UserRepositoryI interface {
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
 	VerifyOTPUsecase(user *User) error
-} 
+}
 
 type PasswordServiceI interface {
 	HashPassword(password string) ([]byte, error)
@@ -109,4 +109,12 @@ type MailerI interface {
 
 type GeneratorI interface {
 	GenerateOTP() string
+}
+
+type ChatRequest struct {
+	Message string `json:"message"`
+}
+
+type ChatResponse struct {
+	Reply string `json:"reply"`
 }

@@ -24,6 +24,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		blogRoutes.GET("/:id/dislikes", BlogCtrl.DisLikeBlogController)
 		blogRoutes.GET("/:id/view", BlogCtrl.ViewBlogController)
 		blogRoutes.POST("/:id/comments", BlogCtrl.CommentsBlogController)
+		blogRoutes.POST("/chat", BlogCtrl.AiChatBlogController)
 	}
 
 	userRoutes := router.Group("/user")
