@@ -83,13 +83,21 @@ type BlogRepositoryI interface {
 
 type UserRepositoryI interface {
 	CheckExistence(email string) bool
-	Register(user *User) (error)
+	Register(user *User) error
 }
 
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
-} 
+}
 
 type PasswordServiceI interface {
 	HashPassword(password string) ([]byte, error)
+}
+
+type ChatRequest struct {
+	Message string `json:"message"`
+}
+
+type ChatResponse struct {
+	Reply string `json:"reply"`
 }

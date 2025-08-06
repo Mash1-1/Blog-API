@@ -232,3 +232,20 @@ func (BlgCtrl *BlogController) CommentsBlogController(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message: ": "comment added"})
 }
+
+func (BlgCtrl *BlogController) AiChatBlogController(c *gin.Context) {
+	var message Domain.ChatRequest
+	err := c.BindJSON(&message)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+
+	var response Domain.ChatResponse
+	response.Reply, err = BlgCtrl.UseCase.AIChatBlogUC(message)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error: ": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message: ": response})
+}

@@ -2,7 +2,11 @@ package usecases
 
 import (
 	"blog_api/Domain"
+	"encoding/json"
 	"errors"
+	"strings"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type BlogUseCase struct {
@@ -16,6 +20,7 @@ type BlogUseCaseI interface {
 	DeleteBlogUC(string) error
 	FilterBlogUC(Domain.Blog) ([]Domain.Blog, error)
 	GetByIdBlogUC(string) (Domain.Blog, error)
+	AIChatBlogUC(Domain.ChatRequest) (string, error)
 }
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
@@ -61,4 +66,74 @@ func (BlgUseCase *BlogUseCase) FilterBlogUC(filterBlog Domain.Blog) ([]Domain.Bl
 
 func (BlgUseCase *BlogUseCase) GetByIdBlogUC(id string) (Domain.Blog, error) {
 	return BlgUseCase.Repository.GetBlog(id)
+}
+
+func (BlgUseCase *BlogUseCase) AIChatBlogUC(message Domain.ChatRequest) (string, error) {
+	apiKey := "AIzaSyDifNmloJTDXGMwqWzr8KtHCjes7dbXpzc"
+	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey
+
+	reqBody := map[string]interface{}{
+		"contents": []map[string]interface{}{
+			{
+				"parts": []map[string]string{
+					{"text": message.Message},
+				},
+			},
+		},
+	}
+
+	client := resty.New()
+	resp, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(reqBody).
+		Post(url)
+
+	if err != nil {
+		return "", err
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(resp.Body(), &result); err != nil {
+		return "", err
+	}
+
+	var rawText string
+	if candidates, ok := result["candidates"].([]interface{}); ok && len(candidates) > 0 {
+		candidate := candidates[0].(map[string]interface{})
+		if content, ok := candidate["content"].(map[string]interface{}); ok {
+			if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
+				part := parts[0].(map[string]interface{})
+				if text, ok := part["text"].(string); ok {
+					rawText = text
+				}
+			}
+		}
+	}
+
+	return RemoveLinesContaining(rawText), nil
+}
+
+func RemoveLinesContaining(text string) string {
+	phrases := []string{"Okay, here's", " I'll try", "Feel free to give me", "Let me know what you think", "The more information you give me, the better I can tailor", "?", "**", "I hope this helps", "Let me know if you'd like me to create", "("}
+
+	lines := strings.Split(text, "\n")
+	cleanedLines := []string{}
+
+	for _, line := range lines {
+		shouldSkip := false
+		lowerLine := strings.ToLower(line)
+
+		for _, phrase := range phrases {
+			if strings.Contains(lowerLine, strings.ToLower(phrase)) {
+				shouldSkip = true
+				break
+			}
+		}
+
+		if !shouldSkip && strings.TrimSpace(line) != "" {
+			cleanedLines = append(cleanedLines, line)
+		}
+	}
+
+	return strings.Join(cleanedLines, "")
 }
