@@ -2,16 +2,17 @@ package routers
 
 import (
 	"blog_api/Delivery/controllers"
+	infrastructure "blog_api/Infrastructure"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.UserController) {
+func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.UserController, middleware *infrastructure.AuthMiddleware) {
 	// Initialize a new router
 	router := gin.Default()
 
 	// Set endpoints
-	blogRoutes := router.Group("/blog")
+	blogRoutes := router.Group("/blog", middleware.Auth_token())
 	{
 		blogRoutes.GET("/", BlogCtrl.GetAllBlogController)
 		blogRoutes.POST("/", BlogCtrl.CreateBlogController)
