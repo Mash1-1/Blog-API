@@ -27,7 +27,7 @@ func main() {
 	user_database, err := Repositories.InitializeUserDB()
 	if err != nil {
 		fmt.Println("Failed while creating user database!")
-		return 
+		return
 	}
 
 	// Get required email info from the env file
@@ -47,7 +47,8 @@ func main() {
 	mailr := infrastructure.NewMailer(Host, Port, Username, Pass, frm)
 	user_repo := Repositories.NewUserRepository(user_database)
 	user_usecase := usecases.NewUserUsecase(user_repo, password_service, &mailr, generator_otp, j_serv)
+	middleware := infrastructure.AuthMiddleware{Usecase: user_usecase}
 	user_controller := controllers.NewUserController(user_usecase)
 
-	routers.SetupRouter(blog_controller, &user_controller)
+	routers.SetupRouter(blog_controller, &user_controller, &middleware)
 }

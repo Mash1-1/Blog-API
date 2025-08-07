@@ -9,20 +9,20 @@ import (
 )
 
 type UserUsecase struct {
-	repo Domain.UserRepositoryI
+	repo      Domain.UserRepositoryI
 	pass_serv Domain.PasswordServiceI
-	mailer Domain.MailerI
-	otpGen Domain.GeneratorI
-	jwtServ Domain.JwtServI
+	mailer    Domain.MailerI
+	otpGen    Domain.GeneratorI
+	jwtServ   Domain.JwtServI
 }
 
 func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI, mailr Domain.MailerI, og Domain.GeneratorI, jt Domain.JwtServI) UserUsecase {
 	return UserUsecase{
-		repo: r,
+		repo:      r,
 		pass_serv: ps,
-		mailer: mailr,
-		otpGen: og,
-		jwtServ: jt,
+		mailer:    mailr,
+		otpGen:    og,
+		jwtServ:   jt,
 	}
 }
 
@@ -30,14 +30,14 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 	if !isValidEmail(data.Email) {
 		return errors.New("invalid email")
 	}
-	
+
 	if uc.repo.CheckExistence(data.Email) != nil {
 		return errors.New("user not found")
 	}
 
 	existingData, err := uc.repo.GetTokenData(data.Email)
 	if err != nil {
-		return err 
+		return err
 	}
 	// Check token expiry and validity
 	if data.Created_at.Sub(existingData.Created_at).Minutes() > 10 || data.Token != existingData.Token {
@@ -51,7 +51,7 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 	}
 	hashed, err := uc.pass_serv.HashPassword(data.NewPassword)
 	if err != nil {
-		return err 
+		return err
 	}
 	return uc.repo.UpdatePassword(data.Email, string(hashed))
 }
@@ -64,11 +64,11 @@ func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 	if uc.repo.CheckExistence(email) != nil {
 		return errors.New("user not found")
 	}
-	
+
 	reset_token := uc.otpGen.GenerateOTP()
 	err := uc.mailer.SendOTPEmail(email, reset_token)
 	if err != nil {
-		return err 
+		return err
 	}
 	data := Domain.ResetTokenS{Token: reset_token, Email: email, Created_at: time.Now()}
 	return uc.repo.ForgotPassword(data)
@@ -76,7 +76,7 @@ func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 
 func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	// Check if user has valid credentials before moving on to insert into db
-	if !isValidEmail(user.Email) || !isValidPassword(user.Password){
+	if !isValidEmail(user.Email) || !isValidPassword(user.Password) {
 		return errors.New("invalid email")
 	}
 	if uc.repo.CheckExistence(user.Email) == nil {
@@ -84,16 +84,16 @@ func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	}
 	new_p, err := uc.pass_serv.HashPassword(user.Password)
 	if err != nil {
-		return err 
+		return err
 	}
 	if !user.Verfied {
 		otp := uc.otpGen.GenerateOTP()
-		user.OTP = otp 
+		user.OTP = otp
 		user.OTPTime = time.Now()
 		err = uc.mailer.SendOTPEmail(user.Email, otp)
 		if err != nil {
 			log.Print(err.Error())
-			return  errors.New("error while sending otp email")
+			return errors.New("error while sending otp email")
 		}
 	}
 	user.Password = string(new_p)
@@ -125,37 +125,47 @@ func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
 		}
 		return errors.New("expired otp code please register again")
 	}
-	if (user.OTP != existingUser.OTP) {
+	if user.OTP != existingUser.OTP {
 		err := uc.repo.DeleteUser(existingUser.Email)
 		if err != nil {
 			return err
 		}
-		return  errors.New("invalid otp code, please register again")
+		return errors.New("invalid otp code, please register again")
 	}
 	existingUser.Verfied = true
 	return uc.repo.UpdateUser(existingUser)
 }
 
+func (uc UserUsecase) GetUserByEmail(email string) (*Domain.User, error) {
+	user, err := uc.GetUserByEmail(email)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 // email validation function
 func isValidEmail(email string) bool {
 	n := len(email)
-	number_of_at := 0 
+	number_of_at := 0
 	ind := -1
-	for i := 0; i<n; i++ {
+	for i := 0; i < n; i++ {
 		if email[i] == '@' {
-			ind = i 
+			ind = i
 			number_of_at += 1
 		}
 	}
-	if number_of_at != 1 || ind == 0{
-		return false 
+	if number_of_at != 1 || ind == 0 {
+		return false
 	}
-	hasDot := false 
+	hasDot := false
 	for i := ind + 1; i < n; i++ {
 		if email[i] == '.' {
 			hasDot = true
 			if i == n-1 {
-				return  false 
+				return false
 			}
 		}
 	}
@@ -169,14 +179,16 @@ func isValidPassword(pass string) bool {
 	special := 0
 	digit := 0
 
-	for _, char := range(pass) {
+	for _, char := range pass {
 		if unicode.IsDigit(char) {
 			digit += 1
-		}else if unicode.IsUpper(char) {
+		} else if unicode.IsUpper(char) {
 			upper += 1
 		} else if unicode.IsLower(char) {
 			lower += 1
-		}else {special += 1}
+		} else {
+			special += 1
+		}
 	}
 	return (len(pass) >= 8 && upper > 0 && special > 0 && lower > 0 && digit > 0)
-} 
+}
