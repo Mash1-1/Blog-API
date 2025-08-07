@@ -15,14 +15,18 @@ type BlogController struct {
 	UseCase usecases.BlogUseCaseI
 }
 
-// Types to use for binding (entities with Json Tags)
+// Types to use for binding (entities with Json Tags) and also bson format for storing
 type BlogDTO struct {
-	ID      string      `json:"id"`
-	Title   string      `json:"title"`
-	Content string      `json:"content"`
-	Owner   Domain.User `json:"owner"`
-	Tags    []string    `json:"tags"`
-	Date    time.Time   `json:"date"`
+	ID        string    `json:"id" bson:"ID"`
+	Title     string    `json:"title" bson:"Title"`
+	Content   string    `json:"content" bson:"Content"`
+	Owner_email     string      `json:"owner" bson:"Owner"`
+	Tags      []string  `json:"tags" bson:"Tags"`
+	Date      time.Time `json:"date" bson:"Date"`
+	Likes     int       `json:"likes" bson:"Likes"`
+	Dislikes  int       `json:"dislikes" bson:"Dislikes"`
+	ViewCount int       `json:"viewCount" bson:"ViewCount"`
+	Comments  []string  `json:"comments" bson:"Comments"`
 }
 
 func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
@@ -32,16 +36,17 @@ func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
 }
 
 func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
-	var blog Domain.BlogDTO
+	var blog BlogDTO
 	err := c.ShouldBindJSON(&blog)
-
+	user , _ := c.Get("user")
+	blog.Owner_email = user.(*Domain.User).Email
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// validate if the user is authorized and authenticated
-	err = BlgCtrl.UseCase.CreateBlogUC(blog.ToDomain())
+	err = BlgCtrl.UseCase.CreateBlogUC(BlgCtrl.ChangeToDomain(blog))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,14 +55,14 @@ func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
 }
 
 func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
-	var SearchBlog Domain.BlogDTO
+	var SearchBlog BlogDTO
 	err := c.ShouldBindJSON(&SearchBlog)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	// Validate request using usecase
-	blogs, err := BlgCtrl.UseCase.SearchBlogUC(SearchBlog.ToDomain())
+	blogs, err := BlgCtrl.UseCase.SearchBlogUC(BlgCtrl.ChangeToDomain(SearchBlog))
 	if err != nil {
 		if err.Error() == "can't update into empty blog" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -70,7 +75,7 @@ func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
 }
 
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
-	var updated_blog Domain.BlogDTO
+	var updated_blog BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)
 
 	// Handle binding errors
@@ -79,7 +84,7 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 		return
 	}
 	// Call usecase and handle different errors
-	err = BlgCtrl.UseCase.UpdateBlogUC(updated_blog.ToDomain())
+	err = BlgCtrl.UseCase.UpdateBlogUC(BlgCtrl.ChangeToDomain(updated_blog))
 	if err != nil {
 		if err.Error() == "blog not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
@@ -133,7 +138,7 @@ func (BlgCtrl *BlogController) GetAllBlogController(c *gin.Context) {
 }
 
 func (BlgCtrl *BlogController) FilterBlogController(c *gin.Context) {
-	var FilterBlog Domain.BlogDTO
+	var FilterBlog BlogDTO
 	err := c.ShouldBindJSON(&FilterBlog)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -143,7 +148,7 @@ func (BlgCtrl *BlogController) FilterBlogController(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Both Date and Tags can't be empty"})
 		return
 	}
-	blogs, err := BlgCtrl.UseCase.FilterBlogUC(FilterBlog.ToDomain())
+	blogs, err := BlgCtrl.UseCase.FilterBlogUC(BlgCtrl.ChangeToDomain(FilterBlog))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -250,4 +255,21 @@ func (BlgCtrl *BlogController) AiChatBlogController(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message: ": response})
+}
+
+// method to convert from Blog DTO to Blog structure
+func (BlgCtrl *BlogController) ChangeToDomain(BlgDto BlogDTO) Domain.Blog {
+	blog := Domain.Blog{
+		ID:        BlgDto.ID,
+		Date:      BlgDto.Date,
+		Title:     BlgDto.Title,
+		Owner_email:     BlgDto.Owner_email,
+		Content:   BlgDto.Content,
+		Tags:      BlgDto.Tags,
+		Likes:     BlgDto.Likes,
+		Dislikes:  BlgDto.Dislikes,
+		ViewCount: BlgDto.ViewCount,
+		Comments:  BlgDto.Comments,
+	}
+	return blog
 }

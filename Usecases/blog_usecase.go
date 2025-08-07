@@ -36,8 +36,7 @@ func (BlgUseCase *BlogUseCase) CreateBlogUC(blog Domain.Blog) error {
 
 func (BlgUseCase *BlogUseCase) SearchBlogUC(searchBlog Domain.Blog) ([]Domain.Blog, error) {
 	// Check if required fields are available
-	var tmp = Domain.User{}
-	if searchBlog.Title == "" && searchBlog.Owner == tmp {
+	if searchBlog.Title == "" && searchBlog.Owner_email == "" {
 		return []Domain.Blog{}, errors.New("can't search for blog with empty searching fileds.(Title or Owner)")
 	}
 	return BlgUseCase.Repository.SearchBlog(&searchBlog)
