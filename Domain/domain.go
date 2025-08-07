@@ -2,6 +2,8 @@ package Domain
 
 import (
 	"time"
+
+	"github.com/markbates/goth"
 )
 
 type User struct {
@@ -13,6 +15,7 @@ type User struct {
 	Verfied  bool
 	OTP      string
 	OTPTime  time.Time
+	Provider string
 }
 
 type Blog struct {
@@ -112,6 +115,7 @@ type UserUsecaseI interface {
 	LoginUsecase(user *User) (string, error)
 	ForgotPasswordUsecase(email string) error
 	ResetPasswordUsecase(data ResetTokenS) error
+	OauthCallbackUsecase(user *goth.User) (string, error)
 	GetUserByEmail(email string) (*User, error)
 }
 

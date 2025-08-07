@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/markbates/goth/gothic"
 )
 
 type UserController struct {
@@ -13,14 +14,15 @@ type UserController struct {
 }
 
 type UserDTO struct {
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
-	Password string    `json:"password"`
-	Bio      string    `json:"bio"`
-	Role     string    `json:"role"`
-	Verfied  bool      `json:"verifed"`
-	OTP      string    `json:"otp"`
-	OTPTime  time.Time `json:"otptime"`
+	Username string `json:"username"`
+	Email    string	`json:"email"`
+	Password string `json:"password"`
+	Bio      string `json:"bio"`
+	Role     string `json:"role"`
+	Verfied  bool `json:"verifed"`
+	OTP  	string `json:"otp"`
+	OTPTime time.Time `json:"otptime"`
+	Provider string `json:"provider"`
 }
 
 type ResetTokenSDTO struct {
@@ -88,6 +90,36 @@ func (UsrCtrl *UserController) ForgotPasswordController(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "an email with a reset toke has been sent", "redirect": "/reset-password"})
 }
 
+func (UsrCtrl *UserController) SignInWithProvider(c *gin.Context) {
+	provider := c.Param("provider")
+	q := c.Request.URL.Query()
+	q.Add("provider", provider)
+	c.Request.URL.RawQuery = q.Encode()
+
+	gothic.BeginAuthHandler(c.Writer, c.Request)
+}
+
+func (UsrCtrl *UserController) OauthCallback(c *gin.Context) {
+	provider := c.Param("provider")
+	q := c.Request.URL.Query()
+	q.Add("provider", provider)
+	c.Request.URL.RawQuery = q.Encode()
+	
+	user, err := gothic.CompleteUserAuth(c.Writer, c.Request)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+
+	token, err := UsrCtrl.usecase.OauthCallbackUsecase(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message" : "logged in successfully", "token" : token})
+}
+
 func (UsrCtrl *UserController) LoginController(c *gin.Context) {
 	var user UserDTO
 	if c.ShouldBindJSON(&user) != nil {
@@ -135,7 +167,7 @@ func (UsrCtrl *UserController) RegisterController(c *gin.Context) {
 	}
 
 	// Handle OTP verification
-	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email", "redirect": "/verify-otp"})
+	c.JSON(http.StatusOK, gin.H{"message" : "OTP sent to your email", "redirect" : "/user/verify-otp"})
 }
 
 func (UsrCtrl *UserController) VerifyOTPController(c *gin.Context) {
@@ -170,11 +202,12 @@ func (UsrCtrl *UserController) ChangeToDomain(user UserDTO) *Domain.User {
 		Email:    user.Email,
 		Password: user.Password,
 		Username: user.Username,
-		Bio:      user.Bio,
-		Role:     user.Role,
-		Verfied:  user.Verfied,
-		OTP:      user.OTP,
-		OTPTime:  user.OTPTime,
+		Bio: user.Bio,
+		Role: user.Role,
+		Verfied: user.Verfied,
+		OTP: user.OTP,
+		OTPTime: user.OTPTime,
+		Provider: user.Provider,
 	}
 	return &dom_user
 }
