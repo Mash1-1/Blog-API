@@ -1,2 +1,3 @@
 # Ignore .env inside Delivery folder
 Delivery/.env
+.env
