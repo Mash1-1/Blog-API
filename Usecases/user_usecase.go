@@ -109,8 +109,19 @@ func (uc UserUsecase) LoginUsecase(user *Domain.User) (string, error) {
 	if !uc.pass_serv.Compare(existingUser.Password, user.Password) {
 		return "", errors.New("invalid password or email")
 	}
+	tokens, err := uc.jwtServ.CreateToken(*user)
+	if err != nil {
+		return "", err
+	}
+	tokenData := Domain.RefreshTokenStorage{
+		Email: user.Email,
+		Token: tokens["refresh_token"],
+	}
+	if err = uc.repo.StoreToken(tokenData); err != nil {
+		return "", err
+	}
 	// Get token using jwt
-	return uc.jwtServ.CreateToken(*user)
+	return tokens["access_token"], nil
 }
 
 func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
@@ -191,4 +202,8 @@ func isValidPassword(pass string) bool {
 		}
 	}
 	return (len(pass) >= 8 && upper > 0 && special > 0 && lower > 0 && digit > 0)
+}
+
+func (uc UserUsecase) StoreToken(token Domain.RefreshTokenStorage) error {
+	return uc.repo.StoreToken(token)
 }

@@ -103,6 +103,8 @@ type UserRepositoryI interface {
 	GetTokenData(email string) (ResetTokenS, error)
 	DeleteTokenData(email string) error
 	UpdatePassword(email, password string) error
+	StoreToken(RefreshTokenStorage) error
+	GetRefreshToken(string) (string, error)
 }
 
 type UserUsecaseI interface {
@@ -124,7 +126,7 @@ type MailerI interface {
 }
 
 type JwtServI interface {
-	CreateToken(user User) (string, error)
+	CreateToken(user User) (map[string]string, error)
 }
 
 type GeneratorI interface {
@@ -137,4 +139,9 @@ type ChatRequest struct {
 
 type ChatResponse struct {
 	Reply string `json:"reply"`
+}
+
+type RefreshTokenStorage struct {
+	Email string
+	Token string
 }

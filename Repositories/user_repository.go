@@ -13,75 +13,91 @@ type UserRepository struct {
 	database *mongo.Database
 }
 
-
-func NewUserRepository(db *mongo.Database) *UserRepository{
+func NewUserRepository(db *mongo.Database) *UserRepository {
 	return &UserRepository{
 		database: db,
 	}
 }
 
-func InitializeUserDB() (*mongo.Database, error){
+func InitializeUserDB() (*mongo.Database, error) {
 	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 
 	if err != nil {
-		return &mongo.Database{}, err 
+		return &mongo.Database{}, err
 	}
 	database := client.Database("user_db")
 	database.CreateCollection(context.TODO(), "users")
 	database.CreateCollection(context.TODO(), "pass_reset")
-	
+	database.CreateCollection(context.TODO(), "refresh_tokens")
+
 	// Clear previous uses from database
 	database.Collection("users").DeleteMany(context.TODO(), bson.D{{}})
 	database.Collection("pass_reset").DeleteMany(context.TODO(), bson.D{{}})
+	database.Collection("refresh_tokens").DeleteMany(context.TODO(), bson.D{{}})
 	return database, nil
 }
 
 func (usRepo *UserRepository) UpdatePassword(email, password string) error {
-	_, err := usRepo.database.Collection("users").UpdateOne(context.TODO(), bson.M{"email" : email}, bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}})
+	_, err := usRepo.database.Collection("users").UpdateOne(context.TODO(), bson.M{"email": email}, bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}})
 	return err
 }
 
-func (usRepo *UserRepository) ForgotPassword(data Domain.ResetTokenS) error {	
+func (usRepo *UserRepository) ForgotPassword(data Domain.ResetTokenS) error {
 	_, err := usRepo.database.Collection("pass_reset").InsertOne(context.TODO(), data)
-	return err 
+	return err
 }
 
 func (usRepo *UserRepository) CheckExistence(email string) error {
 	var existingUser Domain.User
-	return usRepo.database.Collection("users").FindOne(context.TODO(), bson.M{"email" : email}).Decode(&existingUser)
+	return usRepo.database.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
 }
 
 func (usRepo *UserRepository) GetUser(user *Domain.User) (*Domain.User, error) {
-	var existingUser Domain.User 
-	err := usRepo.database.Collection("users").FindOne(context.TODO(), bson.M{"email" : user.Email}).Decode(&existingUser)
-	return &existingUser, err 
+	var existingUser Domain.User
+	err := usRepo.database.Collection("users").FindOne(context.TODO(), bson.M{"email": user.Email}).Decode(&existingUser)
+	return &existingUser, err
 }
 
 func (usRepo *UserRepository) GetTokenData(email string) (Domain.ResetTokenS, error) {
 	var data Domain.ResetTokenS
-	err := usRepo.database.Collection("pass_reset").FindOne(context.TODO(), bson.M{"email" : email}).Decode(&data)
+	err := usRepo.database.Collection("pass_reset").FindOne(context.TODO(), bson.M{"email": email}).Decode(&data)
 	return data, err
 }
 
-func (usRepo *UserRepository) DeleteTokenData(email string) (error) {
-	_, err := usRepo.database.Collection("pass_reset").DeleteMany(context.TODO(), bson.M{"email" : email})
+func (usRepo *UserRepository) DeleteTokenData(email string) error {
+	_, err := usRepo.database.Collection("pass_reset").DeleteMany(context.TODO(), bson.M{"email": email})
 	return err
 }
 
 func (usRepo *UserRepository) UpdateUser(user *Domain.User) error {
-	updateFields := bson.M{"verified" : true}
+	updateFields := bson.M{"verified": true}
 	updateBSON := bson.D{{Key: "$set", Value: updateFields}}
-	_, err := usRepo.database.Collection("users").UpdateOne(context.TODO(), bson.M{"email" : user.Email}, updateBSON)
+	_, err := usRepo.database.Collection("users").UpdateOne(context.TODO(), bson.M{"email": user.Email}, updateBSON)
 	return err
 }
 
 func (usRepo *UserRepository) DeleteUser(email string) error {
-	_, err := usRepo.database.Collection("users").DeleteMany(context.TODO(), bson.M{"email" : email})
-	return err 
+	_, err := usRepo.database.Collection("users").DeleteMany(context.TODO(), bson.M{"email": email})
+	return err
 }
 
-func (usRepo *UserRepository) Register(user *Domain.User) (error) {
+func (usRepo *UserRepository) Register(user *Domain.User) error {
 	_, err := usRepo.database.Collection("users").InsertOne(context.TODO(), user)
 	return err
+}
+
+func (usRepo *UserRepository) StoreToken(rToken Domain.RefreshTokenStorage) error {
+	_, err := usRepo.database.Collection("refresh_tokens").InsertOne(context.TODO(), rToken)
+	return err
+}
+
+func (usRepo *UserRepository) GetRefreshToken(email string) (string, error) {
+	var data Domain.RefreshTokenStorage
+	filter := bson.D{{Key: "Email", Value: bson.D{{Key: "$eq", Value: email}}}}
+	result := usRepo.database.Collection("refresh_tokens").FindOne(context.TODO(), filter)
+	if err := result.Decode(&data); err != nil {
+		return "", err
+	}
+	return data.Token, nil
 }
