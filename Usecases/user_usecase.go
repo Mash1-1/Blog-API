@@ -90,7 +90,7 @@ func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 	}
 
 	reset_token := uc.otpGen.GenerateOTP()
-	err := uc.mailer.SendOTPEmail(email, reset_token)
+	err := uc.mailer.SendResetPassEmail(email, reset_token)
 	if err != nil {
 		return err
 	}

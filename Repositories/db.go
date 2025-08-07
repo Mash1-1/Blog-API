@@ -10,16 +10,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Database struct {
-	db *mongo.Database
-}
 
 func InitializeDb() *mongo.Database {
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Can't load environment variables")
 	}
-
 	DB_URL := os.Getenv("MONGODB_URL")
 
 	clientOptions := options.Client().ApplyURI(DB_URL)
