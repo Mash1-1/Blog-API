@@ -90,9 +90,9 @@ type BlogRepositoryI interface {
 }
 
 type ResetTokenS struct {
-	Email string 
-	Token string 
-	Created_at time.Time
+	Email       string
+	Token       string
+	Created_at  time.Time
 	NewPassword string
 }
 
@@ -104,7 +104,7 @@ type UserRepositoryI interface {
 	DeleteUser(email string) error
 	ForgotPassword(data ResetTokenS) error
 	GetTokenData(email string) (ResetTokenS, error)
-	DeleteTokenData(email string) (error)
+	DeleteTokenData(email string) error
 	UpdatePassword(email, password string) error
 	GetUserByEmail(email string) (*User, error)
 }
@@ -116,7 +116,8 @@ type UserUsecaseI interface {
 	ForgotPasswordUsecase(email string) error
 	ResetPasswordUsecase(data ResetTokenS) error
 	OauthCallbackUsecase(user *goth.User) (string, error)
-} 
+	GetUserByEmail(email string) (*User, error)
+}
 
 type PasswordServiceI interface {
 	HashPassword(password string) ([]byte, error)

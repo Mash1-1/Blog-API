@@ -13,99 +13,18 @@ import (
 )
 
 type BlogRepository struct {
-	Database *mongo.Collection
+	BlogCollection *mongo.Collection
 }
 
-func NewBlogRepository(db *mongo.Collection) *BlogRepository {
+func NewBlogRepository(db *mongo.Database) *BlogRepository {
+
 	return &BlogRepository{
-		Database: db,
+		BlogCollection: db.Collection("blogs"),
 	}
-}
-
-func InitializeBlogDB() (*mongo.Collection, error) {
-	// Initialize collection
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err := mongo.Connect(context.TODO(), clientOptions)
-
-	if err != nil {
-		return &mongo.Collection{}, err
-	}
-	db := client.Database("Blog_DB")
-	//check if the collection exists befor crearing one
-	created, err := collectionExists(db, "blogs")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	if created {
-		// Clear previous usageleftover data
-		collection := db.Collection("blogs")
-		collection.DeleteMany(context.TODO(), bson.D{{}})
-		return collection, nil
-	}
-
-	validator := bson.M{
-		"$jsonSchema": bson.M{
-			"bsonType": "object",
-			"title":    "Blog object Validation",
-			"required": []string{"ID", "Title", "Content"},
-			"properties": bson.M{
-				"ID": bson.M{
-					"bsonType": "string",
-				},
-				"Title": bson.M{
-					"bsonType":    "string",
-					"description": "Name must be a string of lenght 20 and is a required field",
-					"maxLength":   20,
-				},
-				"Content": bson.M{
-					"bsonType":    "string",
-					"minLength":   20,
-					"description": "Content must be a string with minimum length of 20 characters",
-				},
-				"Owner": bson.M{
-					"bsonType":    "object",
-					"description": "Owner is User type with fields",
-					"required":    []string{"username", "email", "password", "role"},
-					"properties": bson.M{
-						"username": bson.M{
-							"bsonType":    "string",
-							"maxLength":   20,
-							"description": "username should be length of less than 20 characters",
-						},
-						"email": bson.M{
-							"bsonType":  "string",
-							"minLength": 8,
-							"pattern":   `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`,
-						},
-						"password": bson.M{
-							"bsonType":  "string",
-							"minLength": 8,
-							"maxLength": 20,
-							"pattern": `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$%\^&\*])[A-Za-z\d!@#\$%\^&\*]{8,}$
-`,
-						},
-						"role": bson.M{
-							"bsonType":    "string",
-							"enum":        []string{"user", "admin"},
-							"description": "Role must be one of 'admin',or 'user'",
-						},
-					},
-				},
-			},
-		},
-	}
-	opts := options.CreateCollection().SetValidator(validator)
-	err = db.CreateCollection(context.TODO(), "blogs", opts)
-	if err != nil {
-		return nil, err
-	}
-
-	collection := db.Collection("blogs")
-	return collection, nil
 }
 
 func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
-	_, err := BlgRepo.Database.InsertOne(context.TODO(), blog.ToBlogDTO())
+	_, err := BlgRepo.BlogCollection.InsertOne(context.TODO(), blog.ToBlogDTO())
 	return err
 }
 
@@ -123,7 +42,7 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 	filter := bson.M{
 		"$and": filters,
 	}
-	cursor, err := BlgRepo.Database.Find(context.TODO(), filter)
+	cursor, err := BlgRepo.BlogCollection.Find(context.TODO(), filter)
 	if err != nil {
 		return []Domain.Blog{}, err
 	}
@@ -162,7 +81,7 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	updatedBSON["Comments"] = updatedBlog.Comments
 	update := bson.M{"$set": updatedBSON}
 	// Do update operation in database
-	updatedRes, err := BlgRepo.Database.UpdateOne(context.TODO(), filter, update)
+	updatedRes, err := BlgRepo.BlogCollection.UpdateOne(context.TODO(), filter, update)
 	// Handle exceptions
 	if err != nil {
 		return err
@@ -179,7 +98,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 	findOptions.SetLimit(int64(limit))
 	findOptions.SetSkip(int64(offset))
 
-	result, err := BlgRepo.Database.Find(context.TODO(), bson.D{}, findOptions)
+	result, err := BlgRepo.BlogCollection.Find(context.TODO(), bson.D{}, findOptions)
 
 	if err != nil {
 		return nil, err
@@ -201,7 +120,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 
 func (BlgRepo *BlogRepository) DeleteBlog(ID string) error {
 	filter := bson.D{{Key: "ID", Value: bson.D{{Key: "$eq", Value: ID}}}}
-	result, err := BlgRepo.Database.DeleteOne(context.TODO(), filter)
+	result, err := BlgRepo.BlogCollection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return err
 	}
@@ -209,21 +128,6 @@ func (BlgRepo *BlogRepository) DeleteBlog(ID string) error {
 		return errors.New("blog not found")
 	}
 	return nil
-}
-
-// checks if the given db is created or not
-func collectionExists(client *mongo.Database, collname string) (bool, error) {
-	dbs, err := client.ListCollectionNames(context.TODO(), bson.D{{Key: "name", Value: collname}})
-	if err != nil {
-		return false, err
-	}
-
-	for _, name := range dbs {
-		if name == collname {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blog, error) {
@@ -242,7 +146,7 @@ func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blo
 	}
 
 	filter := bson.M{"$or": filters}
-	cursor, err := BlgRepo.Database.Find(context.TODO(), filter)
+	cursor, err := BlgRepo.BlogCollection.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find blogs: %w", err)
 	}
@@ -266,7 +170,7 @@ func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blo
 func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 	var blog Domain.Blog
 	filter := bson.D{{Key: "ID", Value: id}}
-	err := BlgRepo.Database.FindOne(context.TODO(), filter).Decode(&blog)
+	err := BlgRepo.BlogCollection.FindOne(context.TODO(), filter).Decode(&blog)
 	if err != nil {
 		return blog, errors.New("Document with id " + id + " not found")
 	}
