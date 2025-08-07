@@ -38,7 +38,7 @@ func InitializeUserDB() (*mongo.Database, error){
 }
 
 func (usRepo *UserRepository) UpdatePassword(email, password string) error {
-	_, err := usRepo.database.Collection("pass_reset").UpdateOne(context.TODO(), bson.M{"email" : email}, bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}})
+	_, err := usRepo.database.Collection("users").UpdateOne(context.TODO(), bson.M{"email" : email}, bson.D{{Key: "$set", Value: bson.D{{Key: "password", Value: password}}}})
 	return err
 }
 

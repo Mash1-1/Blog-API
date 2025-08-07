@@ -49,7 +49,11 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 	if !isValidPassword(data.NewPassword) {
 		return errors.New("invalid password")
 	}
-	return uc.repo.UpdatePassword(data.Email, data.NewPassword)
+	hashed, err := uc.pass_serv.HashPassword(data.NewPassword)
+	if err != nil {
+		return err 
+	}
+	return uc.repo.UpdatePassword(data.Email, string(hashed))
 }
 
 func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
