@@ -78,19 +78,19 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	}
 	// Call usecase and handle different errors
 	err = BlgCtrl.UseCase.UpdateBlogUC(updated_blog.ToDomain())
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{"message": "blog updated successfuly"})
-		return
-	}
-	if err.Error() == "blog not found" {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		return
-	}
-	if err.Error() == "can't update into empty blog" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	if err != nil {
+		if err.Error() == "blog not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "can't update into empty blog" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	return 
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "blog updated successfuly"})
 }
 
 func (BlgCtrl *BlogController) DeleteBlogController(c *gin.Context) {

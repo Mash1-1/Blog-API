@@ -26,6 +26,50 @@ func NewUserUsecase(r Domain.UserRepositoryI, ps Domain.PasswordServiceI, mailr 
 	}
 }
 
+func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
+	if !isValidEmail(data.Email) {
+		return errors.New("invalid email")
+	}
+	
+	if uc.repo.CheckExistence(data.Email) != nil {
+		return errors.New("user not found")
+	}
+
+	existingData, err := uc.repo.GetTokenData(data.Email)
+	if err != nil {
+		return err 
+	}
+	// Check token expiry and validity
+	if data.Created_at.Sub(existingData.Created_at).Minutes() > 10 || data.Token != existingData.Token {
+		uc.repo.DeleteTokenData(data.Email)
+		return errors.New("invalid token")
+	}
+
+	// validate and update password
+	if !isValidPassword(data.NewPassword) {
+		return errors.New("invalid password")
+	}
+	return uc.repo.UpdatePassword(data.Email, data.NewPassword)
+}
+
+func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
+	if !isValidEmail(email) {
+		return errors.New("invalid email")
+	}
+
+	if uc.repo.CheckExistence(email) != nil {
+		return errors.New("user not found")
+	}
+	
+	reset_token := uc.otpGen.GenerateOTP()
+	err := uc.mailer.SendOTPEmail(email, reset_token)
+	if err != nil {
+		return err 
+	}
+	data := Domain.ResetTokenS{Token: reset_token, Email: email, Created_at: time.Now()}
+	return uc.repo.ForgotPassword(data)
+}
+
 func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	// Check if user has valid credentials before moving on to insert into db
 	if !isValidEmail(user.Email) || !isValidPassword(user.Password){
