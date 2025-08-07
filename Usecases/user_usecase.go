@@ -137,7 +137,7 @@ func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
 }
 
 func (uc UserUsecase) GetUserByEmail(email string) (*Domain.User, error) {
-	user, err := uc.GetUserByEmail(email)
+	user, err := uc.repo.GetUserByEmail(email)
 
 	if err != nil {
 		return nil, err

@@ -103,6 +103,7 @@ type UserRepositoryI interface {
 	GetTokenData(email string) (ResetTokenS, error)
 	DeleteTokenData(email string) error
 	UpdatePassword(email, password string) error
+	GetUserByEmail(email string) (*User, error)
 }
 
 type UserUsecaseI interface {

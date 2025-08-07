@@ -12,20 +12,20 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 	router := gin.Default()
 
 	// Set endpoints
-	blogRoutes := router.Group("/blog", middleware.Auth_token())
+	blogRoutes := router.Group("/blog")
 	{
 		blogRoutes.GET("/", BlogCtrl.GetAllBlogController)
-		blogRoutes.POST("/", BlogCtrl.CreateBlogController)
-		blogRoutes.PUT("/", BlogCtrl.UpdateBlogController)
-		blogRoutes.DELETE("/:id", BlogCtrl.DeleteBlogController)
+		blogRoutes.POST("/", middleware.Auth_token(), BlogCtrl.CreateBlogController)
+		blogRoutes.PUT("/", middleware.Auth_token(), BlogCtrl.UpdateBlogController)
+		blogRoutes.DELETE("/:id", middleware.Auth_token(), BlogCtrl.DeleteBlogController)
 		blogRoutes.GET("/search", BlogCtrl.SearchBlogController)
 		blogRoutes.GET("/filter", BlogCtrl.FilterBlogController)
 		blogRoutes.GET("/:id", BlogCtrl.GetBlogController)
-		blogRoutes.GET("/:id/likes", BlogCtrl.LikeBlogController)
-		blogRoutes.GET("/:id/dislikes", BlogCtrl.DisLikeBlogController)
+		blogRoutes.GET("/:id/likes", middleware.Auth_token(), BlogCtrl.LikeBlogController)
+		blogRoutes.GET("/:id/dislikes", middleware.Auth_token(), BlogCtrl.DisLikeBlogController)
 		blogRoutes.GET("/:id/view", BlogCtrl.ViewBlogController)
-		blogRoutes.POST("/:id/comments", BlogCtrl.CommentsBlogController)
-		blogRoutes.POST("/chat", BlogCtrl.AiChatBlogController)
+		blogRoutes.POST("/:id/comments", middleware.Auth_token(), BlogCtrl.CommentsBlogController)
+		blogRoutes.POST("/chat", middleware.Auth_token(), BlogCtrl.AiChatBlogController)
 	}
 
 	userRoutes := router.Group("/user")
