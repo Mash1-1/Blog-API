@@ -2,13 +2,36 @@ package routers
 
 import (
 	"blog_api/Delivery/controllers"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/providers/google"
 )
 
 func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.UserController) {
 	// Initialize a new router
 	router := gin.Default()
+
+	// load environment
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(".env file failed to load")
+	}
+
+	clientID := os.Getenv("CLIENT_ID")
+	clientSecret := os.Getenv("CLIENT_SECRET")
+	clientCallbackURL := os.Getenv("CLIENT_CALLBACK_URL")
+
+	if clientID == "" || clientCallbackURL == "" || clientSecret == "" {
+		log.Fatal("Environment variables (CLIENT_ID, CLIENT_SECRET, CLIENT_CALLBACK_URL) are required.")
+	}
+
+	goth.UseProviders(
+		google.New(clientID, clientSecret, clientCallbackURL),
+	)
 
 	// Set endpoints
 	blogRoutes := router.Group("/blog")
@@ -34,6 +57,8 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		userRoutes.POST("/login", UserCtrl.LoginController)
 		userRoutes.POST("/forgot-password", UserCtrl.ForgotPasswordController)
 		userRoutes.POST("/reset-password", UserCtrl.ResetPasswordController)
+		userRoutes.GET("/auth/:provider", UserCtrl.SignInWithProvider)
+		userRoutes.GET("/auth/:provider/callback", UserCtrl.OauthCallback)
 	}
 	// Run the router
 	router.Run()

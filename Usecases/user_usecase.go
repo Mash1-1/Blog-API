@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 	"unicode"
+
+	"github.com/markbates/goth"
 )
 
 type UserUsecase struct {
@@ -56,6 +58,28 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 	return uc.repo.UpdatePassword(data.Email, string(hashed))
 }
 
+func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
+	
+	if uc.repo.CheckExistence(user.Email) == nil {
+		// Handle login since user already exists
+		existingUser, err := uc.repo.GetUserByEmail(user.Email)
+		if err != nil {
+			return "", err
+		}
+		// Get token using jwt
+		return uc.jwtServ.CreateToken(*existingUser)
+	} else {
+		// Register the user into the database and login the user
+		var newUser Domain.User
+		newUser.Email = user.Email
+		err := uc.repo.Register(&newUser)
+		if err != nil {
+			return "", err 
+		}
+		return uc.jwtServ.CreateToken(newUser)
+	}
+}
+
 func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 	if !isValidEmail(email) {
 		return errors.New("invalid email")
@@ -77,7 +101,7 @@ func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	// Check if user has valid credentials before moving on to insert into db
 	if !isValidEmail(user.Email) || !isValidPassword(user.Password){
-		return errors.New("invalid email")
+		return errors.New("invalid email or password")
 	}
 	if uc.repo.CheckExistence(user.Email) == nil {
 		return errors.New("email already exists in database")

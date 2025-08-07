@@ -85,3 +85,9 @@ func (usRepo *UserRepository) Register(user *Domain.User) (error) {
 	_, err := usRepo.database.Collection("users").InsertOne(context.TODO(), user)
 	return err
 }
+
+func (usRepo *UserRepository) GetUserByEmail(email string) (*Domain.User, error) {
+	var user Domain.User
+	err := usRepo.database.Collection("users").FindOne(context.TODO(), bson.M{"email" : email}).Decode(&user)
+	return &user, err
+}
