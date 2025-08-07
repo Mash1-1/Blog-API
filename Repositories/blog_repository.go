@@ -24,7 +24,7 @@ func NewBlogRepository(db *mongo.Database) *BlogRepository {
 }
 
 func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
-	_, err := BlgRepo.BlogCollection.InsertOne(context.TODO(), blog.ToBlogDTO())
+	_, err := BlgRepo.BlogCollection.InsertOne(context.TODO(), blog)
 	return err
 }
 
@@ -35,9 +35,8 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 	if searchBlog.Title != "" {
 		filters = append(filters, bson.M{"Title": searchBlog.Title})
 	}
-	var tmp = Domain.User{}
-	if searchBlog.Owner != tmp {
-		filters = append(filters, bson.M{"Ogowner": searchBlog.Owner})
+	if searchBlog.Owner_email != "" {
+		filters = append(filters, bson.M{"Ogowner": searchBlog.Owner_email})
 	}
 	filter := bson.M{
 		"$and": filters,
