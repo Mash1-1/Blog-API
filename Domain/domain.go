@@ -86,18 +86,31 @@ type BlogRepositoryI interface {
 	GetBlog(id string) (Blog, error)
 }
 
+type ResetTokenS struct {
+	Email string 
+	Token string 
+	Created_at time.Time
+	NewPassword string
+}
+
 type UserRepositoryI interface {
 	CheckExistence(email string) error
 	Register(user *User) error
 	GetUser(user *User) (*User, error)
 	UpdateUser(user *User) error
 	DeleteUser(email string) error
+	ForgotPassword(data ResetTokenS) error
+	GetTokenData(email string) (ResetTokenS, error)
+	DeleteTokenData(email string) (error)
+	UpdatePassword(email, password string) error
 }
 
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
 	VerifyOTPUsecase(user *User) error
 	LoginUsecase(user *User) (string, error)
+	ForgotPasswordUsecase(email string) error
+	ResetPasswordUsecase(data ResetTokenS) error
 } 
 
 type PasswordServiceI interface {

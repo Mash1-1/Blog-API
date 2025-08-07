@@ -23,10 +23,69 @@ type UserDTO struct {
 	OTPTime time.Time `json:"otptime"`
 }
 
+type ResetTokenSDTO struct {
+	Email string `json:"email"`
+	Token string `json:"token"`
+	Created_at time.Time
+	NewPassword string `json:"new_password"`
+}
+
 func NewUserController(uc Domain.UserUsecaseI) UserController {
 	return UserController{
 		usecase: uc,
 	}
+}
+
+func (UsrCtrl *UserController) ResetPasswordController(c *gin.Context) {
+	var data ResetTokenSDTO
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+		return
+	}
+	data.Created_at = time.Now()
+	err := UsrCtrl.usecase.ResetPasswordUsecase(*UsrCtrl.ChangeToDomainToken(data))
+	if err != nil {
+		if err.Error() == "invalid email"{
+			c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+			return 
+		}
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusNotFound, gin.H{"message" : err.Error()})
+			return
+		}
+		if err.Error() == "invalid token" {
+			c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+			return 
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+	c.JSON(http.StatusOK, gin.H{"message" : "Password reset successfully!"})
+}
+
+func (UsrCtrl *UserController) ForgotPasswordController(c *gin.Context) {
+	var tmp ResetTokenSDTO 
+
+	if c.ShouldBindJSON(&tmp) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error" : "error while binding JSON"})
+		return 
+	}
+
+	err := UsrCtrl.usecase.ForgotPasswordUsecase(tmp.Email)
+	if err != nil {
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error" : err.Error()})
+			return
+		}
+		if err.Error() == "invalid email" {
+			c.JSON(http.StatusBadRequest, gin.H{"error" : err.Error()})
+			return 
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		return 
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message" : "an email with a reset toke has been sent", "redirect" : "/reset-password"})
 }
 
 func (UsrCtrl *UserController) LoginController(c *gin.Context) {
@@ -118,4 +177,14 @@ func (UsrCtrl *UserController) ChangeToDomain(user UserDTO) *Domain.User {
 		OTPTime: user.OTPTime,
 	}
 	return &dom_user 
+}
+
+func (UsrCtrl *UserController) ChangeToDomainToken(data ResetTokenSDTO) *Domain.ResetTokenS {
+	var dom_res = Domain.ResetTokenS {
+		Email: data.Email,
+		NewPassword: data.NewPassword,
+		Token: data.Token,
+		Created_at: data.Created_at,
+	}
+	return &dom_res
 }

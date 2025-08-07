@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"log"
 	"net/smtp"
 )
 
@@ -26,7 +25,7 @@ func NewMailer(Host, Port, Username, Pass, frm string) Mailer {
 func (m *Mailer) SendOTPEmail(toEmail, otp string) error {
 	to := []string{toEmail}
 	addr := m.smtpHost + ":" + m.smtpPort 
-	log.Print("address: ", addr)
+
 	// Create the message
 	subject := "Subject : Your OTP Code: \n"
 	body := "Your OTP is: " + otp + " it expires in 5 minutes."
