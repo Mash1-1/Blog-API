@@ -126,6 +126,7 @@ type PasswordServiceI interface {
 
 type MailerI interface {
 	SendOTPEmail(toEmail, otp string) error
+	SendResetPassEmail(toEmail, token string) error
 }
 
 type JwtServI interface {

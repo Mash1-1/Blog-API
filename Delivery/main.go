@@ -8,6 +8,7 @@ import (
 	usecases "blog_api/Usecases"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -27,7 +28,7 @@ func main() {
 		log.Fatal("Can't load environment variables")
 	}
 	Host := os.Getenv("SMTP_HOST")
-	Port := os.Getenv("SMTP_PORT")
+	Port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
 	Username := os.Getenv("SMTP_USERNAME")
 	Pass := os.Getenv("SMTP_PASSWORD")
 	frm := os.Getenv("SMTP_FROM")
