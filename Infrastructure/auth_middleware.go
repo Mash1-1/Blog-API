@@ -39,16 +39,22 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		token, err := jwt.Parse(authParts[0], func(t *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(authParts[1], func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
 			return JwtSecret, nil
 		})
 
+		if err != nil {
+			fmt.Printf("error: %v", err)
+			c.Abort()
+			return
+		}
+
 		claims, ok := token.Claims.(jwt.MapClaims)
 		// Check if the JWT is valid and has the type MapClaims
-		if err == nil && ok && token.Valid {
+		if ok && token.Valid {
 			// Get role and store it for the next handlers to authorize role
 			c.Set("role", claims["role"].(string))
 		} else {
@@ -63,6 +69,7 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
 		c.Set("user", user)
 
 		c.Next()

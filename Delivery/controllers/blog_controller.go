@@ -33,18 +33,20 @@ func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
 
 func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
 	var blog Domain.BlogDTO
-	err := c.ShouldBind(&blog)
+	err := c.ShouldBindJSON(&blog)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	// validate if the user is authorized and authenticated
 	err = BlgCtrl.UseCase.CreateBlogUC(blog.ToDomain())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message: ": "blog created successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message: ": "blog created successfully"})
 }
 
 func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
@@ -87,8 +89,8 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	return 
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "blog updated successfuly"})
 }
