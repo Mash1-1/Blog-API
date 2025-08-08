@@ -6,37 +6,29 @@ import (
 	infrastructure "blog_api/Infrastructure"
 	"blog_api/Repositories"
 	usecases "blog_api/Usecases"
-	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
 	// Initialize controllers and router
-	blog_database, err := Repositories.InitializeBlogDB()
-	if err != nil {
-		fmt.Println("Failed while creating blog database!")
-		return
-	}
-	blog_repo := Repositories.NewBlogRepository(blog_database)
+	db := Repositories.InitializeDb()
+
+	// blog dependency injection
+	blog_repo := Repositories.NewBlogRepository(db)
 	blog_usecase := usecases.NewBlogUseCase(blog_repo)
 	blog_controller := controllers.NewBlogController(blog_usecase)
 
-	user_database, err := Repositories.InitializeUserDB()
-	if err != nil {
-		fmt.Println("Failed while creating user database!")
-		return
-	}
-
 	// Get required email info from the env file
-	err = godotenv.Load(".env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Can't load environment variables")
 	}
 	Host := os.Getenv("SMTP_HOST")
-	Port := os.Getenv("SMTP_PORT")
+	Port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
 	Username := os.Getenv("SMTP_USERNAME")
 	Pass := os.Getenv("SMTP_PASSWORD")
 	frm := os.Getenv("SMTP_FROM")
@@ -45,10 +37,15 @@ func main() {
 	generator_otp := infrastructure.Generator{}
 	password_service := infrastructure.PasswordService{}
 	mailr := infrastructure.NewMailer(Host, Port, Username, Pass, frm)
-	user_repo := Repositories.NewUserRepository(user_database)
+
+	// user dependency injection
+	user_repo := Repositories.NewUserRepository(db)
 	user_usecase := usecases.NewUserUsecase(user_repo, password_service, &mailr, generator_otp, j_serv)
+
+	// auth middleware
 	middleware := infrastructure.AuthMiddleware{Usecase: user_usecase}
 	user_controller := controllers.NewUserController(user_usecase)
 
+	// router
 	routers.SetupRouter(blog_controller, &user_controller, &middleware)
 }

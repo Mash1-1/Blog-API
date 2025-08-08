@@ -2,6 +2,9 @@ package Domain
 
 import (
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/markbates/goth"
 )
 
 type User struct {
@@ -13,67 +16,20 @@ type User struct {
 	Verfied  bool
 	OTP      string
 	OTPTime  time.Time
+	Provider string
 }
 
 type Blog struct {
-	ID        string
-	Title     string
-	Content   string
-	Owner     User
-	Tags      []string
-	Date      time.Time
-	Likes     int
-	Dislikes  int
-	ViewCount int
-	Comments  []string
-}
-
-// Types to use for binding (entities with Json Tags) and also bson format for storing
-type BlogDTO struct {
-	ID        string    `json:"id" bson:"ID"`
-	Title     string    `json:"title" bson:"Title"`
-	Content   string    `json:"content" bson:"Content"`
-	Owner     User      `json:"owner" bson:"Owner"`
-	Tags      []string  `json:"tags" bson:"Tags"`
-	Date      time.Time `json:"date" bson:"Date"`
-	Likes     int       `json:"likes" bson:"Likes"`
-	Dislikes  int       `json:"dislikes" bson:"Dislikes"`
-	ViewCount int       `json:"viewCount" bson:"ViewCount"`
-	Comments  []string  `json:"comments" bson:"Comments"`
-}
-
-// method to convert from Blog DTO to Blog structure
-func (BlgDto *BlogDTO) ToDomain() Blog {
-	blog := Blog{
-		ID:        BlgDto.ID,
-		Date:      BlgDto.Date,
-		Title:     BlgDto.Title,
-		Owner:     BlgDto.Owner,
-		Content:   BlgDto.Content,
-		Tags:      BlgDto.Tags,
-		Likes:     BlgDto.Likes,
-		Dislikes:  BlgDto.Dislikes,
-		ViewCount: BlgDto.ViewCount,
-		Comments:  BlgDto.Comments,
-	}
-	return blog
-}
-
-// method to convert Blog struct to BlogDTO object
-func (Blg *Blog) ToBlogDTO() BlogDTO {
-	blogDTO := BlogDTO{
-		ID:        Blg.ID,
-		Title:     Blg.Title,
-		Content:   Blg.Content,
-		Owner:     Blg.Owner,
-		Tags:      Blg.Tags,
-		Date:      Blg.Date,
-		Likes:     Blg.Likes,
-		Dislikes:  Blg.Dislikes,
-		ViewCount: Blg.ViewCount,
-		Comments:  Blg.Comments,
-	}
-	return blogDTO
+	ID          string
+	Title       string
+	Content     string
+	Owner_email string
+	Tags        []string
+	Date        time.Time
+	Likes       int
+	Dislikes    int
+	ViewCount   int
+	Comments    []string
 }
 
 type BlogRepositoryI interface {
@@ -105,15 +61,19 @@ type UserRepositoryI interface {
 	UpdatePassword(email, password string) error
 	StoreToken(RefreshTokenStorage) error
 	GetRefreshToken(string) (string, error)
+	GetUserByEmail(email string) (*User, error)
+	DeleteToken(email string) error
 }
 
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
 	VerifyOTPUsecase(user *User) error
-	LoginUsecase(user *User) (string, error)
+	LoginUsecase(user *User) (map[string]string, error)
 	ForgotPasswordUsecase(email string) error
 	ResetPasswordUsecase(data ResetTokenS) error
+	OauthCallbackUsecase(user *goth.User) (string, error)
 	GetUserByEmail(email string) (*User, error)
+	RefreshUseCase(refreshToken string) (map[string]string, error)
 }
 
 type PasswordServiceI interface {
@@ -123,10 +83,13 @@ type PasswordServiceI interface {
 
 type MailerI interface {
 	SendOTPEmail(toEmail, otp string) error
+	SendResetPassEmail(toEmail, token string) error
 }
 
 type JwtServI interface {
 	CreateToken(user User) (map[string]string, error)
+	ParseToken(string) (*jwt.Token, error)
+	IsExpired(*jwt.Token) bool
 }
 
 type GeneratorI interface {
