@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,13 +15,60 @@ import (
 
 type BlogRepository struct {
 	BlogCollection *mongo.Collection
+	LikesCollection *mongo.Collection
+}
+
+type LikeTrackerDTO struct {
+	BlogID string `bson:"id"`
+	UserEmail string `bson:"email"`
+	Liked int `bson:"liked"`
+}
+
+type BlogDBDTO struct {
+	ID        string `bson:""`	
+	Title     string
+	Content   string
+	Owner_email    string
+	Tags      []string
+	Date      time.Time
+	// Likes     int
+	// Dislikes  int
+	ViewCount int
+	Comments  []string
 }
 
 func NewBlogRepository(db *mongo.Database) *BlogRepository {
-
 	return &BlogRepository{
 		BlogCollection: db.Collection("blogs"),
+		LikesCollection: db.Collection("likes"),
 	}
+}
+
+func (BlgRepo *BlogRepository) FindLiked(user_email, blog_id string) (*Domain.LikeTracker, error) {
+	var tmp LikeTrackerDTO
+	filter := bson.M{"id" : blog_id, "email" : user_email}
+	err := BlgRepo.LikesCollection.FindOne(context.TODO(), filter).Decode(&tmp)
+	return ChangeToDomain(&tmp) , err
+}
+
+func (BlgRepo *BlogRepository) CreateLikeTk(lt Domain.LikeTracker) error {
+	_, err := BlgRepo.LikesCollection.InsertOne(context.TODO(), ChangeToDTO(lt))
+	return err
+}
+
+func (BlgRepo *BlogRepository) DeleteLikeTk(lt Domain.LikeTracker) error {
+	_, err := BlgRepo.LikesCollection.DeleteMany(context.TODO(), bson.M{"email" : lt.UserEmail, "id" : lt.BlogID})
+	return err
+}
+
+func (BlgRepo *BlogRepository) NumberOfLikes(id string) (int64, error) {
+	filter := bson.M{"id" : id, "liked" : 1}
+	return BlgRepo.LikesCollection.CountDocuments(context.TODO(), filter)
+}
+
+func (BlgRepo *BlogRepository) NumberOfDislikes(id string) (int64, error) {
+	filter := bson.M{"id" : id, "liked" : -1}
+	return BlgRepo.LikesCollection.CountDocuments(context.TODO(), filter)
 }
 
 func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
@@ -36,7 +84,7 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 		filters = append(filters, bson.M{"Title": searchBlog.Title})
 	}
 	if searchBlog.Owner_email != "" {
-		filters = append(filters, bson.M{"Ogowner": searchBlog.Owner_email})
+		filters = append(filters, bson.M{"Owner": searchBlog.Owner_email})
 	}
 	filter := bson.M{
 		"$and": filters,
@@ -74,8 +122,8 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	if updatedBlog.Tags != nil {
 		updatedBSON["Tags"] = updatedBlog.Tags
 	}
-	updatedBSON["Likes"] = updatedBlog.Likes
-	updatedBSON["Dislikes"] = updatedBlog.Dislikes
+	// updatedBSON["Likes"] = updatedBlog.Likes
+	// updatedBSON["Dislikes"] = updatedBlog.Dislikes
 	updatedBSON["ViewCount"] = updatedBlog.ViewCount
 	updatedBSON["Comments"] = updatedBlog.Comments
 	update := bson.M{"$set": updatedBSON}
@@ -168,10 +216,26 @@ func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blo
 
 func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 	var blog Domain.Blog
-	filter := bson.D{{Key: "ID", Value: id}}
+	filter := bson.D{{Key: "id", Value: id}}
 	err := BlgRepo.BlogCollection.FindOne(context.TODO(), filter).Decode(&blog)
 	if err != nil {
 		return blog, errors.New("Document with id " + id + " not found")
 	}
 	return blog, nil
+}
+
+func ChangeToDTO(t Domain.LikeTracker) LikeTrackerDTO {
+	return LikeTrackerDTO{
+		BlogID: t.BlogID,
+		UserEmail: t.UserEmail,
+		Liked: t.Liked,
+	}
+}
+
+func ChangeToDomain(t *LikeTrackerDTO) *Domain.LikeTracker {
+	return &Domain.LikeTracker{
+		BlogID: t.BlogID,
+		UserEmail: t.UserEmail,
+		Liked: t.Liked,
+	}
 }
