@@ -6,7 +6,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
 )
 
