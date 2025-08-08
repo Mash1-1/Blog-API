@@ -5,6 +5,9 @@ import (
 	infrastructure "blog_api/Infrastructure"
 	"errors"
 	"strings"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
 )
 
 type BlogUseCase struct {
@@ -19,6 +22,10 @@ type BlogUseCaseI interface {
 	FilterBlogUC(Domain.Blog) ([]Domain.Blog, error)
 	GetByIdBlogUC(string) (Domain.Blog, error)
 	AIChatBlogUC(Domain.ChatRequest) (*string, error)
+	CheckIfLiked(user_email, blogId string) (int, error)
+	AddLikeUC(Domain.LikeTracker) error
+	Dislikes(id string) (int64, error)
+	Likes(id string) (int64, error)
 }
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
@@ -28,8 +35,66 @@ func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
 }
 
 func (BlgUseCase *BlogUseCase) CreateBlogUC(blog Domain.Blog) error {
+	blog.ID = uuid.New().String()
 	err := BlgUseCase.Repository.Create(&blog)
 	return err
+}
+
+func (BlgUseCase *BlogUseCase) AddLikeUC(lt Domain.LikeTracker) error {
+	// Delete previous instances
+	err := BlgUseCase.Repository.DeleteLikeTk(lt)
+	if err != nil {
+		return err
+	}
+	return BlgUseCase.Repository.CreateLikeTk(lt)
+}
+
+func (BlgUseCase *BlogUseCase) CheckIfLiked(user_email, blogId string) (int, error) {
+	if user_email == "" || blogId == "" {
+		return 0, errors.New("invalid blog id or user email when checking liked")
+	}
+	liked, err := BlgUseCase.Repository.FindLiked(user_email, blogId)
+	if err != nil && err.Error() == "mongo: no documents in result" {
+		// If user hasnt liked this post before, create a new doc to like it
+		var Liketrk Domain.LikeTracker 
+		Liketrk.BlogID = blogId
+		Liketrk.UserEmail = user_email
+		Liketrk.Liked = 0
+
+		err := BlgUseCase.Repository.CreateLikeTk(Liketrk) 
+		if err != nil {
+			return 0, err
+		}
+		return 0, nil
+	} else {
+		if err != nil {
+			return 0, err 
+		}		
+	}
+	return liked.Liked, err
+} 
+
+func (BlgUsecase *BlogUseCase) Likes(id string) (int64, error) {
+	if id == "" {
+		return 0, errors.New("id field can not be empty")
+	}
+	_, err := BlgUsecase.Repository.GetBlog(id)
+	if err != nil {
+		return 0, err
+	}
+
+	return BlgUsecase.Repository.NumberOfLikes(id)
+}
+
+func (BlgUsecase *BlogUseCase) Dislikes(id string) (int64, error) {
+	if id == "" {
+		return 0, errors.New("id field can not be empty")
+	}
+	_, err := BlgUsecase.Repository.GetBlog(id)
+	if err != nil {
+		return 0, err
+	}
+	return BlgUsecase.Repository.NumberOfDislikes(id)
 }
 
 func (BlgUseCase *BlogUseCase) SearchBlogUC(searchBlog Domain.Blog) ([]Domain.Blog, error) {

@@ -42,18 +42,20 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		blogRoutes.GET("/filter", BlogCtrl.FilterBlogController)
 		blogRoutes.GET("/:id", BlogCtrl.GetBlogController)
 		blogRoutes.GET("/:id/view", BlogCtrl.ViewBlogController)
+		blogRoutes.GET("/:id/likes", BlogCtrl.LikesController)
+		blogRoutes.GET("/:id/dislikes", BlogCtrl.DislikesController)
 
 		// Authenticated Routes
 		authBlog := blogRoutes.Group("/")
 		authBlog.Use(middleware.Auth_token())
 		{
-			blogRoutes.POST("/", BlogCtrl.CreateBlogController)
-			blogRoutes.PUT("/", BlogCtrl.UpdateBlogController)
-			blogRoutes.DELETE("/:id", BlogCtrl.DeleteBlogController)
-			blogRoutes.GET("/:id/likes", BlogCtrl.LikeBlogController)
-			blogRoutes.GET("/:id/dislikes", BlogCtrl.DisLikeBlogController)
-			blogRoutes.POST("/:id/comments", BlogCtrl.CommentsBlogController)
-			blogRoutes.POST("/chat", BlogCtrl.AiChatBlogController)
+			authBlog.POST("/", BlogCtrl.CreateBlogController)
+			authBlog.PUT("/", BlogCtrl.UpdateBlogController)
+			authBlog.DELETE("/:id", BlogCtrl.DeleteBlogController)
+			authBlog.GET("/:id/like", BlogCtrl.LikeBlogController)
+			authBlog.GET("/:id/dislike", BlogCtrl.DisLikeBlogController)
+			authBlog.POST("/:id/comments", BlogCtrl.CommentsBlogController)
+			authBlog.POST("/chat", BlogCtrl.AiChatBlogController)
 
 		}
 	}
@@ -72,10 +74,10 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		authUser := userRoutes.Group("/")
 		authUser.Use(middleware.Auth_token())
 		{
-			userRoutes.PUT("/", UserCtrl.UpdateProfileController)
+			authUser.PUT("/", UserCtrl.UpdateProfileController)
 
 			// Admin Routes
-			userRoutes.PUT("/role", middleware.Require_Admin(), UserCtrl.UpdateUserRoleController)
+			authUser.PUT("/role", middleware.Require_Admin(), UserCtrl.UpdateUserRoleController)
 		}
 	}
 	// Run the router

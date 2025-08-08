@@ -19,16 +19,14 @@ type User struct {
 }
 
 type Blog struct {
-	ID          string
-	Title       string
-	Content     string
-	Owner_email string
-	Tags        []string
-	Date        time.Time
-	Likes       int
-	Dislikes    int
-	ViewCount   int
-	Comments    []string
+	ID        string
+	Title     string
+	Content   string
+	Owner_email    string
+	Tags      []string
+	Date      time.Time
+	ViewCount int
+	Comments  []string
 }
 
 type BlogRepositoryI interface {
@@ -39,6 +37,11 @@ type BlogRepositoryI interface {
 	DeleteBlog(id string) error
 	FilterBlog(filterBlog *Blog) ([]Blog, error)
 	GetBlog(id string) (Blog, error)
+	FindLiked(user_email, blog_id string) (*LikeTracker, error)
+	CreateLikeTk(lt LikeTracker) error
+	DeleteLikeTk(lt LikeTracker) error
+	NumberOfDislikes(id string) (int64, error)
+	NumberOfLikes(id string) (int64, error)
 }
 
 type ResetTokenS struct {
@@ -46,6 +49,12 @@ type ResetTokenS struct {
 	Token       string
 	Created_at  time.Time
 	NewPassword string
+}
+
+type LikeTracker struct {
+	BlogID string
+	UserEmail string 
+	Liked int
 }
 
 type UserRepositoryI interface {

@@ -71,7 +71,6 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 		}
 
 		c.Set("user", user)
-
 		c.Next()
 	}
 }
