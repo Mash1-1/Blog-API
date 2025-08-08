@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,20 +12,6 @@ import (
 
 type BlogController struct {
 	UseCase Domain.BlogUseCaseI
-}
-
-// Types to use for binding (entities with Json Tags) and also bson format for storing
-type BlogDTO struct {
-	ID        string    `bson:"ID"`
-	Title     string    `json:"title" bson:"Title"`
-	Content   string    `json:"content" bson:"Content"`
-	Owner_email     string      `json:"owner" bson:"Owner"`
-	Tags      []string  `json:"tags" bson:"Tags"`
-	Date      time.Time `json:"date" bson:"Date"`
-	// Likes     int       `json:"likes" bson:"Likes"`
-	// Dislikes  int       `json:"dislikes" bson:"Dislikes"`
-	ViewCount int       `json:"viewCount" bson:"ViewCount"`
-	Comments  []string  `json:"comments" bson:"Comments"`
 }
 
 func NewBlogController(Uc Domain.BlogUseCaseI) *BlogController {
