@@ -2,11 +2,9 @@ package usecases
 
 import (
 	"blog_api/Domain"
-	"encoding/json"
+	infrastructure "blog_api/Infrastructure"
 	"errors"
 	"strings"
-
-	"github.com/go-resty/resty/v2"
 )
 
 type BlogUseCase struct {
@@ -20,7 +18,7 @@ type BlogUseCaseI interface {
 	DeleteBlogUC(string) error
 	FilterBlogUC(Domain.Blog) ([]Domain.Blog, error)
 	GetByIdBlogUC(string) (Domain.Blog, error)
-	AIChatBlogUC(Domain.ChatRequest) (string, error)
+	AIChatBlogUC(Domain.ChatRequest) (*string, error)
 }
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
@@ -67,49 +65,16 @@ func (BlgUseCase *BlogUseCase) GetByIdBlogUC(id string) (Domain.Blog, error) {
 	return BlgUseCase.Repository.GetBlog(id)
 }
 
-func (BlgUseCase *BlogUseCase) AIChatBlogUC(message Domain.ChatRequest) (string, error) {
-	apiKey := "AIzaSyDifNmloJTDXGMwqWzr8KtHCjes7dbXpzc"
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + apiKey
+func (BlgUseCase *BlogUseCase) AIChatBlogUC(message Domain.ChatRequest) (*string, error) {
+	AI := infrastructure.InitAIClient()
 
-	reqBody := map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{
-				"parts": []map[string]string{
-					{"text": message.Message},
-				},
-			},
-		},
-	}
-
-	client := resty.New()
-	resp, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(reqBody).
-		Post(url)
+	blog_text, err := AI.Generate_blog_content(message.Message)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	var result map[string]interface{}
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
-		return "", err
-	}
-
-	var rawText string
-	if candidates, ok := result["candidates"].([]interface{}); ok && len(candidates) > 0 {
-		candidate := candidates[0].(map[string]interface{})
-		if content, ok := candidate["content"].(map[string]interface{}); ok {
-			if parts, ok := content["parts"].([]interface{}); ok && len(parts) > 0 {
-				part := parts[0].(map[string]interface{})
-				if text, ok := part["text"].(string); ok {
-					rawText = text
-				}
-			}
-		}
-	}
-
-	return RemoveLinesContaining(rawText), nil
+	return blog_text, nil
 }
 
 func RemoveLinesContaining(text string) string {

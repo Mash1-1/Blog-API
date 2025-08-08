@@ -19,18 +19,17 @@ type User struct {
 }
 
 type Blog struct {
-	ID        string
-	Title     string
-	Content   string
-	Owner_email    string
-	Tags      []string
-	Date      time.Time
-	Likes     int
-	Dislikes  int
-	ViewCount int
-	Comments  []string
+	ID          string
+	Title       string
+	Content     string
+	Owner_email string
+	Tags        []string
+	Date        time.Time
+	Likes       int
+	Dislikes    int
+	ViewCount   int
+	Comments    []string
 }
-
 
 type BlogRepositoryI interface {
 	Create(blog *Blog) error
@@ -99,5 +98,5 @@ type ChatRequest struct {
 }
 
 type ChatResponse struct {
-	Reply string `json:"reply"`
+	Reply *string `json:"reply"`
 }
