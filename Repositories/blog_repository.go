@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,19 +21,6 @@ type LikeTrackerDTO struct {
 	BlogID string `bson:"id"`
 	UserEmail string `bson:"email"`
 	Liked int `bson:"liked"`
-}
-
-type BlogDBDTO struct {
-	ID        string `bson:""`	
-	Title     string
-	Content   string
-	Owner_email    string
-	Tags      []string
-	Date      time.Time
-	// Likes     int
-	// Dislikes  int
-	ViewCount int
-	Comments  []string
 }
 
 func NewBlogRepository(db *mongo.Database) *BlogRepository {
