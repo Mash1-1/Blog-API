@@ -24,7 +24,7 @@ func (BlgCtrl *BlogController) CreateBlogController(c *gin.Context) {
 	var blog BlogDTO
 	log.Print("gets here")
 	err := c.ShouldBindJSON(&blog)
-	user , _ := c.Get("user")
+	user, _ := c.Get("user")
 	blog.Owner_email = user.(*Domain.User).Email
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -166,9 +166,9 @@ func (BlgCtrl *BlogController) LikeBlogController(c *gin.Context) {
 	liked, err := BlgCtrl.UseCase.CheckIfLiked(user.(*Domain.User).Email, id)
 	if err != nil {
 		if err.Error() == "invalid blog id or user email when checking liked" {
-			c.JSON(http.StatusNotFound, gin.H{"error" : err})
+			c.JSON(http.StatusNotFound, gin.H{"error": err})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
@@ -179,7 +179,7 @@ func (BlgCtrl *BlogController) LikeBlogController(c *gin.Context) {
 	if liked == 1 {
 		Liketrk.Liked = 0
 		BlgCtrl.UseCase.AddLikeUC(Liketrk)
-		c.JSON(http.StatusOK, gin.H{"message" : "removed like from this blog"})
+		c.JSON(http.StatusOK, gin.H{"message": "removed like from this blog"})
 		return
 	}
 
@@ -187,7 +187,7 @@ func (BlgCtrl *BlogController) LikeBlogController(c *gin.Context) {
 	Liketrk.Liked = 1
 	err = BlgCtrl.UseCase.AddLikeUC(Liketrk)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message: ": "liked"})
@@ -204,32 +204,32 @@ func (BlgCtrl *BlogController) DisLikeBlogController(c *gin.Context) {
 	}
 	// Check if user has already disliked this post
 	var Liketrk Domain.LikeTracker
-	Liketrk.BlogID = id 
+	Liketrk.BlogID = id
 	Liketrk.UserEmail = user_email
 	liked, err := BlgCtrl.UseCase.CheckIfLiked(user_email, id)
 	if err != nil {
 		if err.Error() == "invalid blog id or user email when checking liked" {
-			c.JSON(http.StatusNotFound, gin.H{"error" : err})
+			c.JSON(http.StatusNotFound, gin.H{"error": err})
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
 	if liked == -1 {
-		Liketrk.Liked = 0 
+		Liketrk.Liked = 0
 		err := BlgCtrl.UseCase.AddLikeUC(Liketrk)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message" : "removed dislike from blog"})
-		return 
+		c.JSON(http.StatusOK, gin.H{"message": "removed dislike from blog"})
+		return
 	}
 	Liketrk.Liked = -1
 	err = BlgCtrl.UseCase.AddLikeUC(Liketrk)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
-		return 
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message: ": "Disliked"})
@@ -240,13 +240,13 @@ func (BlgCtrl *BlogController) LikesController(c *gin.Context) {
 	num, err := BlgCtrl.UseCase.Likes(id)
 	if err != nil {
 		if err.Error() == "id field can not be empty" {
-			c.JSON(http.StatusBadRequest, gin.H{"error" : err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error" :err.Error()})
-		return 
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"number of likes" : num})
+	c.JSON(http.StatusOK, gin.H{"number of likes": num})
 }
 
 func (BlgCtrl *BlogController) DislikesController(c *gin.Context) {
@@ -254,13 +254,13 @@ func (BlgCtrl *BlogController) DislikesController(c *gin.Context) {
 	num, err := BlgCtrl.UseCase.Dislikes(id)
 	if err != nil {
 		if err.Error() == "id field can not be empty" {
-			c.JSON(http.StatusBadRequest, gin.H{"error" : err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error" :err.Error()})
-		return 
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{"number of dislikes" : num})
+	c.JSON(http.StatusOK, gin.H{"number of dislikes": num})
 }
 
 func (BlgCtrl *BlogController) ViewBlogController(c *gin.Context) {
@@ -319,15 +319,26 @@ func (BlgCtrl *BlogController) AiChatBlogController(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message: ": response})
 }
 
+func (BlgCtrl *BlogController) GetPopularBlogs(c *gin.Context) {
+	blogs, err := BlgCtrl.UseCase.GetPopularBlogs()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"blogs: ": blogs})
+}
+
 // method to convert from Blog DTO to Blog structure
 func (BlgCtrl *BlogController) ChangeToDomain(BlgDto BlogDTO) Domain.Blog {
 	blog := Domain.Blog{
-		ID:        BlgDto.ID,
-		Date:      BlgDto.Date,
-		Title:     BlgDto.Title,
-		Owner_email:     BlgDto.Owner_email,
-		Content:   BlgDto.Content,
-		Tags:      BlgDto.Tags,
+		ID:          BlgDto.ID,
+		Date:        BlgDto.Date,
+		Title:       BlgDto.Title,
+		Owner_email: BlgDto.Owner_email,
+		Content:     BlgDto.Content,
+		Tags:        BlgDto.Tags,
 		// Likes:     BlgDto.Likes,
 		// Dislikes:  BlgDto.Dislikes,
 		ViewCount: BlgDto.ViewCount,

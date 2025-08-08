@@ -17,6 +17,7 @@ type BlogRepositoryI interface {
 	DeleteLikeTk(lt LikeTracker) error
 	NumberOfDislikes(id string) (int64, error)
 	NumberOfLikes(id string) (int64, error)
+	GetPopularBlogs() ([]Blog, error)
 }
 
 type BlogUseCaseI interface {
@@ -32,6 +33,7 @@ type BlogUseCaseI interface {
 	AddLikeUC(LikeTracker) error
 	Dislikes(id string) (int64, error)
 	Likes(id string) (int64, error)
+	GetPopularBlogs() ([]Blog, error)
 }
 
 type UserRepositoryI interface {

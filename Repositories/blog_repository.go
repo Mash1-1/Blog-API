@@ -13,28 +13,28 @@ import (
 )
 
 type BlogRepository struct {
-	BlogCollection *mongo.Collection
+	BlogCollection  *mongo.Collection
 	LikesCollection *mongo.Collection
 }
 
 type LikeTrackerDTO struct {
-	BlogID string `bson:"id"`
+	BlogID    string `bson:"id"`
 	UserEmail string `bson:"email"`
-	Liked int `bson:"liked"`
+	Liked     int    `bson:"liked"`
 }
 
 func NewBlogRepository(db *mongo.Database) *BlogRepository {
 	return &BlogRepository{
-		BlogCollection: db.Collection("blogs"),
+		BlogCollection:  db.Collection("blogs"),
 		LikesCollection: db.Collection("likes"),
 	}
 }
 
 func (BlgRepo *BlogRepository) FindLiked(user_email, blog_id string) (*Domain.LikeTracker, error) {
 	var tmp LikeTrackerDTO
-	filter := bson.M{"id" : blog_id, "email" : user_email}
+	filter := bson.M{"id": blog_id, "email": user_email}
 	err := BlgRepo.LikesCollection.FindOne(context.TODO(), filter).Decode(&tmp)
-	return ChangeToDomain(&tmp) , err
+	return ChangeToDomain(&tmp), err
 }
 
 func (BlgRepo *BlogRepository) CreateLikeTk(lt Domain.LikeTracker) error {
@@ -43,17 +43,17 @@ func (BlgRepo *BlogRepository) CreateLikeTk(lt Domain.LikeTracker) error {
 }
 
 func (BlgRepo *BlogRepository) DeleteLikeTk(lt Domain.LikeTracker) error {
-	_, err := BlgRepo.LikesCollection.DeleteMany(context.TODO(), bson.M{"email" : lt.UserEmail, "id" : lt.BlogID})
+	_, err := BlgRepo.LikesCollection.DeleteMany(context.TODO(), bson.M{"email": lt.UserEmail, "id": lt.BlogID})
 	return err
 }
 
 func (BlgRepo *BlogRepository) NumberOfLikes(id string) (int64, error) {
-	filter := bson.M{"id" : id, "liked" : 1}
+	filter := bson.M{"id": id, "liked": 1}
 	return BlgRepo.LikesCollection.CountDocuments(context.TODO(), filter)
 }
 
 func (BlgRepo *BlogRepository) NumberOfDislikes(id string) (int64, error) {
-	filter := bson.M{"id" : id, "liked" : -1}
+	filter := bson.M{"id": id, "liked": -1}
 	return BlgRepo.LikesCollection.CountDocuments(context.TODO(), filter)
 }
 
@@ -210,18 +210,89 @@ func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 	return blog, nil
 }
 
+func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
+	pipeline := mongo.Pipeline{
+		// $lookup
+		{
+			{Key: "$lookup", Value: bson.D{
+				{Key: "from", Value: "like_trackers"},
+				{Key: "localField", Value: "_id"},
+				{Key: "foreignField", Value: "BlogID"},
+				{Key: "as", Value: "reactions"},
+			}},
+		},
+		// $addFields for likes and dislikes
+		{
+			{Key: "$addFields", Value: bson.D{
+				{Key: "likes", Value: bson.D{
+					{Key: "$size", Value: bson.D{
+						{Key: "$filter", Value: bson.D{
+							{Key: "input", Value: "$reactions"},
+							{Key: "as", Value: "reaction"},
+							{Key: "cond", Value: bson.D{
+								{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
+							}},
+						}},
+					}},
+				}},
+				{Key: "dislikes", Value: bson.D{
+					{Key: "$size", Value: bson.D{
+						{Key: "$filter", Value: bson.D{
+							{Key: "input", Value: "$reactions"},
+							{Key: "as", Value: "reaction"},
+							{Key: "cond", Value: bson.D{
+								{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
+							}},
+						}},
+					}},
+				}},
+			}},
+		},
+		// $addFields for score
+		{
+			{Key: "$addFields", Value: bson.D{
+				{Key: "score", Value: bson.D{
+					{Key: "$subtract", Value: bson.A{
+						bson.D{{Key: "$add", Value: bson.A{"$likes", "$dislikes"}}},
+						"$Views",
+					}},
+				}},
+			}},
+		},
+		// $sort
+		{
+			{Key: "$sort", Value: bson.D{
+				{Key: "score", Value: -1},
+			}},
+		},
+	}
+
+	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("aggregate error: %w", err)
+	}
+	defer cursor.Close(context.TODO())
+
+	var blogs []Domain.Blog
+	if err := cursor.All(context.TODO(), &blogs); err != nil {
+		return nil, fmt.Errorf("cursor decode error: %w", err)
+	}
+
+	return blogs, nil
+}
+
 func ChangeToDTO(t Domain.LikeTracker) LikeTrackerDTO {
 	return LikeTrackerDTO{
-		BlogID: t.BlogID,
+		BlogID:    t.BlogID,
 		UserEmail: t.UserEmail,
-		Liked: t.Liked,
+		Liked:     t.Liked,
 	}
 }
 
 func ChangeToDomain(t *LikeTrackerDTO) *Domain.LikeTracker {
 	return &Domain.LikeTracker{
-		BlogID: t.BlogID,
+		BlogID:    t.BlogID,
 		UserEmail: t.UserEmail,
-		Liked: t.Liked,
+		Liked:     t.Liked,
 	}
 }
