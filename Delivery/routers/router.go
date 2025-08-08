@@ -2,9 +2,9 @@ package routers
 
 import (
 	"blog_api/Delivery/controllers"
+	infrastructure "blog_api/Infrastructure"
 	"log"
 	"os"
-	infrastructure "blog_api/Infrastructure"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -38,17 +38,24 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 	blogRoutes := router.Group("/blog")
 	{
 		blogRoutes.GET("/", BlogCtrl.GetAllBlogController)
-		blogRoutes.POST("/", middleware.Auth_token(), BlogCtrl.CreateBlogController)
-		blogRoutes.PUT("/", middleware.Auth_token(), BlogCtrl.UpdateBlogController)
-		blogRoutes.DELETE("/:id", middleware.Auth_token(), BlogCtrl.DeleteBlogController)
 		blogRoutes.GET("/search", BlogCtrl.SearchBlogController)
 		blogRoutes.GET("/filter", BlogCtrl.FilterBlogController)
 		blogRoutes.GET("/:id", BlogCtrl.GetBlogController)
-		blogRoutes.GET("/:id/likes", middleware.Auth_token(), BlogCtrl.LikeBlogController)
-		blogRoutes.GET("/:id/dislikes", middleware.Auth_token(), BlogCtrl.DisLikeBlogController)
 		blogRoutes.GET("/:id/view", BlogCtrl.ViewBlogController)
-		blogRoutes.POST("/:id/comments", middleware.Auth_token(), BlogCtrl.CommentsBlogController)
-		blogRoutes.POST("/chat", middleware.Auth_token(), BlogCtrl.AiChatBlogController)
+
+		// Authenticated Routes
+		authBlog := blogRoutes.Group("/")
+		authBlog.Use(middleware.Auth_token())
+		{
+			blogRoutes.POST("/", BlogCtrl.CreateBlogController)
+			blogRoutes.PUT("/", BlogCtrl.UpdateBlogController)
+			blogRoutes.DELETE("/:id", BlogCtrl.DeleteBlogController)
+			blogRoutes.GET("/:id/likes", BlogCtrl.LikeBlogController)
+			blogRoutes.GET("/:id/dislikes", BlogCtrl.DisLikeBlogController)
+			blogRoutes.POST("/:id/comments", BlogCtrl.CommentsBlogController)
+			blogRoutes.POST("/chat", BlogCtrl.AiChatBlogController)
+
+		}
 	}
 
 	userRoutes := router.Group("/user")
@@ -60,6 +67,16 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		userRoutes.POST("/reset-password", UserCtrl.ResetPasswordController)
 		userRoutes.GET("/auth/:provider", UserCtrl.SignInWithProvider)
 		userRoutes.GET("/auth/:provider/callback", UserCtrl.OauthCallback)
+
+		// Authenticated Routes
+		authUser := userRoutes.Group("/")
+		authUser.Use(middleware.Auth_token())
+		{
+			userRoutes.PUT("/", UserCtrl.UpdateProfileController)
+
+			// Admin Routes
+			userRoutes.PUT("/role", middleware.Require_Admin(), UserCtrl.UpdateUserRoleController)
+		}
 	}
 	// Run the router
 	router.Run()

@@ -14,7 +14,7 @@ type AuthMiddleware struct {
 	Usecase Domain.UserUsecaseI
 }
 
-func (am AuthMiddleware) Auth_role() gin.HandlerFunc {
+func (am AuthMiddleware) Require_Admin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, ok := c.Get("role")
 		if ok && role == "admin" {

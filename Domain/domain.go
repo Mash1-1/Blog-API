@@ -107,6 +107,8 @@ type UserRepositoryI interface {
 	DeleteTokenData(email string) error
 	UpdatePassword(email, password string) error
 	GetUserByEmail(email string) (*User, error)
+	UpdateUserProfile(user *User) (*User, error)
+	UpdateUserRole(email string, role string) (*User, error)
 }
 
 type UserUsecaseI interface {
@@ -117,6 +119,8 @@ type UserUsecaseI interface {
 	ResetPasswordUsecase(data ResetTokenS) error
 	OauthCallbackUsecase(user *goth.User) (string, error)
 	GetUserByEmail(email string) (*User, error)
+	UpdateProfileUsecase(user *User) (*User, error)
+	UpdateUserRole(email string, role string) (*User, error)
 }
 
 type PasswordServiceI interface {

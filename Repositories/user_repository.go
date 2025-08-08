@@ -74,3 +74,52 @@ func (usRepo *UserRepository) GetUserByEmail(email string) (*Domain.User, error)
 	err := usRepo.UserCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 	return &user, err
 }
+
+func (usRepo *UserRepository) UpdateUserProfile(user *Domain.User) (*Domain.User, error) {
+	updateFields := bson.M{
+		"username": user.Username,
+		"bio":      user.Bio,
+	}
+
+	updateBSON := bson.D{{Key: "$set", Value: updateFields}}
+
+	// Perform the update
+	_, err := usRepo.UserCollection.UpdateOne(
+		context.TODO(),
+		bson.M{"email": user.Email},
+		updateBSON,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch the updated user
+	var updatedUser Domain.User
+	err = usRepo.UserCollection.FindOne(
+		context.TODO(),
+		bson.M{"email": user.Email},
+	).Decode(&updatedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedUser, nil
+}
+
+func (usRepo *UserRepository) UpdateUserRole(email string, role string) (*Domain.User, error) {
+	filter := bson.M{"email": email}
+	update := bson.M{"$set": bson.M{"role": role}}
+
+	_, err := usRepo.UserCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedUser Domain.User
+	err = usRepo.UserCollection.FindOne(context.TODO(), filter).Decode(&updatedUser)
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedUser, nil
+}

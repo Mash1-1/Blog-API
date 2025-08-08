@@ -14,15 +14,20 @@ type UserController struct {
 }
 
 type UserDTO struct {
-	Username string `json:"username"`
-	Email    string	`json:"email"`
-	Password string `json:"password"`
-	Bio      string `json:"bio"`
-	Role     string `json:"role"`
-	Verfied  bool `json:"verifed"`
-	OTP  	string `json:"otp"`
-	OTPTime time.Time `json:"otptime"`
-	Provider string `json:"provider"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Password string    `json:"password"`
+	Bio      string    `json:"bio"`
+	Role     string    `json:"role"`
+	Verfied  bool      `json:"verifed"`
+	OTP      string    `json:"otp"`
+	OTPTime  time.Time `json:"otptime"`
+	Provider string    `json:"provider"`
+}
+
+type UpdateProfileDTO struct {
+	Username string `json:"username,omitempty"`
+	Bio      string `json:"bio,omitempty"`
 }
 
 type ResetTokenSDTO struct {
@@ -30,6 +35,10 @@ type ResetTokenSDTO struct {
 	Token       string `json:"token"`
 	Created_at  time.Time
 	NewPassword string `json:"new_password"`
+}
+
+type RoleUpdateDTO struct {
+	Role string `json:"role" binding:"required"`
 }
 
 func NewUserController(uc Domain.UserUsecaseI) UserController {
@@ -104,20 +113,20 @@ func (UsrCtrl *UserController) OauthCallback(c *gin.Context) {
 	q := c.Request.URL.Query()
 	q.Add("provider", provider)
 	c.Request.URL.RawQuery = q.Encode()
-	
+
 	user, err := gothic.CompleteUserAuth(c.Writer, c.Request)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
-		return 
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	token, err := UsrCtrl.usecase.OauthCallbackUsecase(&user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message" : "logged in successfully", "token" : token})
+	c.JSON(http.StatusOK, gin.H{"message": "logged in successfully", "token": token})
 }
 
 func (UsrCtrl *UserController) LoginController(c *gin.Context) {
@@ -167,7 +176,7 @@ func (UsrCtrl *UserController) RegisterController(c *gin.Context) {
 	}
 
 	// Handle OTP verification
-	c.JSON(http.StatusOK, gin.H{"message" : "OTP sent to your email", "redirect" : "/user/verify-otp"})
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email", "redirect": "/user/verify-otp"})
 }
 
 func (UsrCtrl *UserController) VerifyOTPController(c *gin.Context) {
@@ -202,11 +211,11 @@ func (UsrCtrl *UserController) ChangeToDomain(user UserDTO) *Domain.User {
 		Email:    user.Email,
 		Password: user.Password,
 		Username: user.Username,
-		Bio: user.Bio,
-		Role: user.Role,
-		Verfied: user.Verfied,
-		OTP: user.OTP,
-		OTPTime: user.OTPTime,
+		Bio:      user.Bio,
+		Role:     user.Role,
+		Verfied:  user.Verfied,
+		OTP:      user.OTP,
+		OTPTime:  user.OTPTime,
 		Provider: user.Provider,
 	}
 	return &dom_user
@@ -220,4 +229,82 @@ func (UsrCtrl *UserController) ChangeToDomainToken(data ResetTokenSDTO) *Domain.
 		Created_at:  data.Created_at,
 	}
 	return &dom_res
+}
+
+func (UsrCtrl *UserController) UpdateProfileController(c *gin.Context) {
+	var updateDTO UpdateProfileDTO
+
+	// Bind incoming JSON payload
+	if err := c.ShouldBindJSON(&updateDTO); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get the authenticated user from context
+	userCtx, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Type assert to your domain user model
+	currentUser, ok := userCtx.(*Domain.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse user from context"})
+		return
+	}
+
+	// Update fields (only if provided)
+	if updateDTO.Username != "" {
+		currentUser.Username = updateDTO.Username
+	}
+	if updateDTO.Bio != "" {
+		currentUser.Bio = updateDTO.Bio
+	}
+
+	// Call usecase to update user profile
+	updatedUser, err := UsrCtrl.usecase.UpdateProfileUsecase(currentUser)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Return the updated user (excluding sensitive fields)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Profile updated successfully",
+		"user":    updatedUser,
+	})
+}
+
+func (UsrCtrl *UserController) UpdateUserRoleController(c *gin.Context) {
+	var roleDTO RoleUpdateDTO
+
+	// Bind input
+	if err := c.ShouldBindJSON(&roleDTO); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	email := c.Query("email")
+
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email is required"})
+		return
+	}
+
+	// Call usecase
+	updatedUser, err := UsrCtrl.usecase.UpdateUserRole(email, roleDTO.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Respond with updated role
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User role updated successfully",
+		"user": gin.H{
+			"email": updatedUser.Email,
+			"role":  updatedUser.Role,
+		},
+	})
 }
