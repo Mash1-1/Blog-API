@@ -59,7 +59,7 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 }
 
 func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
-	
+
 	if uc.repo.CheckExistence(user.Email) == nil {
 		// Handle login since user already exists
 		existingUser, err := uc.repo.GetUserByEmail(user.Email)
@@ -74,7 +74,7 @@ func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
 		newUser.Email = user.Email
 		err := uc.repo.Register(&newUser)
 		if err != nil {
-			return "", err 
+			return "", err
 		}
 		return uc.jwtServ.CreateToken(newUser)
 	}
@@ -100,7 +100,7 @@ func (uc UserUsecase) ForgotPasswordUsecase(email string) error {
 
 func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	// Check if user has valid credentials before moving on to insert into db
-	if !isValidEmail(user.Email) || !isValidPassword(user.Password){
+	if !isValidEmail(user.Email) || !isValidPassword(user.Password) {
 		return errors.New("invalid email or password")
 	}
 	if uc.repo.CheckExistence(user.Email) == nil {
@@ -168,6 +168,23 @@ func (uc UserUsecase) GetUserByEmail(email string) (*Domain.User, error) {
 	}
 
 	return user, nil
+}
+
+func (uc UserUsecase) UpdateProfileUsecase(user *Domain.User) (*Domain.User, error) {
+	user, err := uc.repo.UpdateUserProfile(user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (uc UserUsecase) UpdateUserRole(email string, role string) (*Domain.User, error) {
+	if role != "user" && role != "admin" {
+		return nil, errors.New("invalid role")
+	}
+	return uc.repo.UpdateUserRole(email, role)
 }
 
 // email validation function
