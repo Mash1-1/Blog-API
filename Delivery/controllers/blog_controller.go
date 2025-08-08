@@ -9,11 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blog_api/Domain"
-	usecases "blog_api/Usecases"
 )
 
 type BlogController struct {
-	UseCase usecases.BlogUseCaseI
+	UseCase Domain.BlogUseCaseI
 }
 
 // Types to use for binding (entities with Json Tags) and also bson format for storing
@@ -30,7 +29,7 @@ type BlogDTO struct {
 	Comments  []string  `json:"comments" bson:"Comments"`
 }
 
-func NewBlogController(Uc usecases.BlogUseCaseI) *BlogController {
+func NewBlogController(Uc Domain.BlogUseCaseI) *BlogController {
 	return &BlogController{
 		UseCase: Uc,
 	}

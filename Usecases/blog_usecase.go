@@ -12,20 +12,6 @@ import (
 type BlogUseCase struct {
 	Repository Domain.BlogRepositoryI
 }
-type BlogUseCaseI interface {
-	CreateBlogUC(Domain.Blog) error
-	UpdateBlogUC(Domain.Blog) error
-	GetAllBlogUC(limit int, offset int) ([]Domain.Blog, error)
-	SearchBlogUC(Domain.Blog) ([]Domain.Blog, error)
-	DeleteBlogUC(string) error
-	FilterBlogUC(Domain.Blog) ([]Domain.Blog, error)
-	GetByIdBlogUC(string) (Domain.Blog, error)
-	AIChatBlogUC(Domain.ChatRequest) (*string, error)
-	CheckIfLiked(user_email, blogId string) (int, error)
-	AddLikeUC(Domain.LikeTracker) error
-	Dislikes(id string) (int64, error)
-	Likes(id string) (int64, error)
-}
 
 func NewBlogUseCase(Repo Domain.BlogRepositoryI) *BlogUseCase {
 	return &BlogUseCase{

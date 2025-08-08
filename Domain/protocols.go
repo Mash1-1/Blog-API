@@ -1,33 +1,8 @@
 package Domain
 
 import (
-	"time"
-
 	"github.com/markbates/goth"
 )
-
-type User struct {
-	Username string
-	Email    string
-	Password string
-	Bio      string
-	Role     string
-	Verfied  bool
-	OTP      string
-	OTPTime  time.Time
-	Provider string
-}
-
-type Blog struct {
-	ID        string
-	Title     string
-	Content   string
-	Owner_email    string
-	Tags      []string
-	Date      time.Time
-	ViewCount int
-	Comments  []string
-}
 
 type BlogRepositoryI interface {
 	Create(blog *Blog) error
@@ -44,17 +19,19 @@ type BlogRepositoryI interface {
 	NumberOfLikes(id string) (int64, error)
 }
 
-type ResetTokenS struct {
-	Email       string
-	Token       string
-	Created_at  time.Time
-	NewPassword string
-}
-
-type LikeTracker struct {
-	BlogID string
-	UserEmail string 
-	Liked int
+type BlogUseCaseI interface {
+	CreateBlogUC(Blog) error
+	UpdateBlogUC(Blog) error
+	GetAllBlogUC(limit int, offset int) ([]Blog, error)
+	SearchBlogUC(Blog) ([]Blog, error)
+	DeleteBlogUC(string) error
+	FilterBlogUC(Blog) ([]Blog, error)
+	GetByIdBlogUC(string) (Blog, error)
+	AIChatBlogUC(ChatRequest) (*string, error)
+	CheckIfLiked(user_email, blogId string) (int, error)
+	AddLikeUC(LikeTracker) error
+	Dislikes(id string) (int64, error)
+	Likes(id string) (int64, error)
 }
 
 type UserRepositoryI interface {
@@ -100,12 +77,4 @@ type JwtServI interface {
 
 type GeneratorI interface {
 	GenerateOTP() string
-}
-
-type ChatRequest struct {
-	Message string `json:"message"`
-}
-
-type ChatResponse struct {
-	Reply *string `json:"reply"`
 }
