@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/markbates/goth"
 )
 
@@ -67,7 +68,11 @@ func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
 			return "", err
 		}
 		// Get token using jwt
-		return uc.jwtServ.CreateToken(*existingUser)
+		tokens, err := uc.jwtServ.CreateToken(*existingUser)
+		if err != nil {
+			return "", err
+		}
+		return tokens["access_token"], nil
 	} else {
 		// Register the user into the database and login the user
 		var newUser Domain.User
@@ -76,7 +81,11 @@ func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return uc.jwtServ.CreateToken(newUser)
+		tokens, err := uc.jwtServ.CreateToken(newUser)
+		if err != nil {
+			return "", err
+		}
+		return tokens["access_token"], nil
 	}
 }
 
@@ -124,17 +133,29 @@ func (uc UserUsecase) RegisterUsecase(user *Domain.User) error {
 	return uc.repo.Register(user)
 }
 
-func (uc UserUsecase) LoginUsecase(user *Domain.User) (string, error) {
+func (uc UserUsecase) LoginUsecase(user *Domain.User) (map[string]string, error) {
+	var tokens map[string]string
 	existingUser, err := uc.repo.GetUser(user)
 	if err != nil {
-		return "", errors.New("user not found")
+		return tokens, errors.New("user not found")
 	}
 
 	if !uc.pass_serv.Compare(existingUser.Password, user.Password) {
-		return "", errors.New("invalid password or email")
+		return tokens, errors.New("invalid password or email")
+	}
+	tokens, err = uc.jwtServ.CreateToken(*user)
+	if err != nil {
+		return tokens, err
+	}
+	tokenData := Domain.RefreshTokenStorage{
+		Email: user.Email,
+		Token: tokens["refresh_token"],
+	}
+	if err = uc.repo.StoreToken(tokenData); err != nil {
+		return tokens, err
 	}
 	// Get token using jwt
-	return uc.jwtServ.CreateToken(*user)
+	return tokens, nil
 }
 
 func (uc UserUsecase) VerifyOTPUsecase(user *Domain.User) error {
@@ -232,4 +253,33 @@ func isValidPassword(pass string) bool {
 		}
 	}
 	return (len(pass) >= 8 && upper > 0 && special > 0 && lower > 0 && digit > 0)
+}
+
+func (uc UserUsecase) RefreshUseCase(refreshToken string) (map[string]string, error) {
+	tokens := make(map[string]string)
+	token, err := uc.jwtServ.ParseToken(refreshToken)
+	if err != nil {
+		return tokens, err
+	}
+	claims := token.Claims.(jwt.MapClaims)
+	userEmail := claims["email"].(string)
+	if uc.jwtServ.IsExpired(token) {
+		return tokens, errors.New("refresh Token expired try to login again")
+	}
+	if err := uc.repo.DeleteToken(userEmail); err != nil {
+		return tokens, err
+	}
+
+	user, err := uc.repo.GetUserByEmail(userEmail)
+	if err != nil {
+		return tokens, err
+	}
+	tokens, err = uc.jwtServ.CreateToken(*user)
+	if err != nil {
+		return tokens, err
+	}
+	if err = uc.repo.StoreToken(Domain.RefreshTokenStorage{Token: tokens["refresh_token"], Email: userEmail}); err != nil {
+		return tokens, err
+	}
+	return tokens, err
 }

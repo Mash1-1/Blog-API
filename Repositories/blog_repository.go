@@ -212,60 +212,48 @@ func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 
 func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
 	pipeline := mongo.Pipeline{
-		// $lookup
-		{
-			{Key: "$lookup", Value: bson.D{
-				{Key: "from", Value: "like_trackers"},
-				{Key: "localField", Value: "_id"},
-				{Key: "foreignField", Value: "BlogID"},
-				{Key: "as", Value: "reactions"},
-			}},
-		},
-		// $addFields for likes and dislikes
-		{
-			{Key: "$addFields", Value: bson.D{
-				{Key: "likes", Value: bson.D{
-					{Key: "$size", Value: bson.D{
-						{Key: "$filter", Value: bson.D{
-							{Key: "input", Value: "$reactions"},
-							{Key: "as", Value: "reaction"},
-							{Key: "cond", Value: bson.D{
-								{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
-							}},
-						}},
-					}},
-				}},
-				{Key: "dislikes", Value: bson.D{
-					{Key: "$size", Value: bson.D{
-						{Key: "$filter", Value: bson.D{
-							{Key: "input", Value: "$reactions"},
-							{Key: "as", Value: "reaction"},
-							{Key: "cond", Value: bson.D{
-								{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
-							}},
-						}},
+	bson.D{{Key: "$lookup", Value: bson.D{
+		{Key: "from", Value: "likes"},
+		{Key: "localField", Value: "_id"},
+		{Key: "foreignField", Value: "BlogID"},
+		{Key: "as", Value: "reactions"},
+	}}},
+	bson.D{{Key: "$addFields", Value: bson.D{
+		{Key: "likes", Value: bson.D{
+			{Key: "$size", Value: bson.D{
+				{Key: "$filter", Value: bson.D{
+					{Key: "input", Value: "$reactions"},
+					{Key: "as", Value: "reaction"},
+					{Key: "cond", Value: bson.D{
+						{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
 					}},
 				}},
 			}},
-		},
-		// $addFields for score
-		{
-			{Key: "$addFields", Value: bson.D{
-				{Key: "score", Value: bson.D{
-					{Key: "$subtract", Value: bson.A{
-						bson.D{{Key: "$add", Value: bson.A{"$likes", "$dislikes"}}},
-						"$Views",
+		}},
+		{Key: "dislikes", Value: bson.D{
+			{Key: "$size", Value: bson.D{
+				{Key: "$filter", Value: bson.D{
+					{Key: "input", Value: "$reactions"},
+					{Key: "as", Value: "reaction"},
+					{Key: "cond", Value: bson.D{
+						{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
 					}},
 				}},
 			}},
-		},
-		// $sort
-		{
-			{Key: "$sort", Value: bson.D{
-				{Key: "score", Value: -1},
+		}},
+	}}},
+	bson.D{{Key: "$addFields", Value: bson.D{
+		{Key: "score", Value: bson.D{
+			{Key: "$add", Value: bson.A{
+				bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
+				"$ViewCount",
 			}},
-		},
-	}
+		}},
+	}}},
+	bson.D{{Key: "$sort", Value: bson.D{
+		{Key: "score", Value: -1},
+	}}},
+}
 
 	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
@@ -277,7 +265,6 @@ func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
 	if err := cursor.All(context.TODO(), &blogs); err != nil {
 		return nil, fmt.Errorf("cursor decode error: %w", err)
 	}
-
 	return blogs, nil
 }
 

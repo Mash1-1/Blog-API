@@ -339,8 +339,6 @@ func (BlgCtrl *BlogController) ChangeToDomain(BlgDto BlogDTO) Domain.Blog {
 		Owner_email: BlgDto.Owner_email,
 		Content:     BlgDto.Content,
 		Tags:        BlgDto.Tags,
-		// Likes:     BlgDto.Likes,
-		// Dislikes:  BlgDto.Dislikes,
 		ViewCount: BlgDto.ViewCount,
 		Comments:  BlgDto.Comments,
 	}

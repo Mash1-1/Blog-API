@@ -1,8 +1,10 @@
 package Domain
 
 import (
+	"github.com/dgrijalva/jwt-go"
 	"github.com/markbates/goth"
 )
+
 
 type BlogRepositoryI interface {
 	Create(blog *Blog) error
@@ -46,21 +48,25 @@ type UserRepositoryI interface {
 	GetTokenData(email string) (ResetTokenS, error)
 	DeleteTokenData(email string) error
 	UpdatePassword(email, password string) error
+	StoreToken(RefreshTokenStorage) error
+	GetRefreshToken(string) (string, error)
 	GetUserByEmail(email string) (*User, error)
 	UpdateUserProfile(user *User) (*User, error)
 	UpdateUserRole(email string, role string) (*User, error)
+	DeleteToken(email string) error
 }
 
 type UserUsecaseI interface {
 	RegisterUsecase(user *User) error
 	VerifyOTPUsecase(user *User) error
-	LoginUsecase(user *User) (string, error)
+	LoginUsecase(user *User) (map[string]string, error)
 	ForgotPasswordUsecase(email string) error
 	ResetPasswordUsecase(data ResetTokenS) error
 	OauthCallbackUsecase(user *goth.User) (string, error)
 	GetUserByEmail(email string) (*User, error)
 	UpdateProfileUsecase(user *User) (*User, error)
 	UpdateUserRole(email string, role string) (*User, error)
+	RefreshUseCase(refreshToken string) (map[string]string, error)
 }
 
 type PasswordServiceI interface {
@@ -74,9 +80,15 @@ type MailerI interface {
 }
 
 type JwtServI interface {
-	CreateToken(user User) (string, error)
+	CreateToken(user User) (map[string]string, error)
+	ParseToken(string) (*jwt.Token, error)
+	IsExpired(*jwt.Token) bool
 }
 
 type GeneratorI interface {
 	GenerateOTP() string
+}
+type RefreshTokenStorage struct {
+	Email string
+	Token string
 }

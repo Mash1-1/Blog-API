@@ -11,7 +11,6 @@ import (
 
 type AI struct {
 	model_name string
-	thinking   int
 	Ai_client  *genai.Client
 	config     *genai.GenerateContentConfig
 }

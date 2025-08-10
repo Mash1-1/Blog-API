@@ -70,6 +70,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		userRoutes.POST("/reset-password", UserCtrl.ResetPasswordController)
 		userRoutes.GET("/auth/:provider", UserCtrl.SignInWithProvider)
 		userRoutes.GET("/auth/:provider/callback", UserCtrl.OauthCallback)
+		userRoutes.POST("/refresh", UserCtrl.RefreshController)
 
 		// Authenticated Routes
 		authUser := userRoutes.Group("/")
