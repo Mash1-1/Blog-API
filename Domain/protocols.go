@@ -5,7 +5,6 @@ import (
 	"github.com/markbates/goth"
 )
 
-
 type BlogRepositoryI interface {
 	Create(blog *Blog) error
 	UpdateBlog(updatedBlog *Blog) error
@@ -54,6 +53,9 @@ type UserRepositoryI interface {
 	UpdateUserProfile(user *User) (*User, error)
 	UpdateUserRole(email string, role string) (*User, error)
 	DeleteToken(email string) error
+	AddToBlackList(token, email string) error
+	DeleteFromBlackList(email string) error
+	RetriveFromBlackList(email string) (string, error)
 }
 
 type UserUsecaseI interface {
@@ -67,6 +69,8 @@ type UserUsecaseI interface {
 	UpdateProfileUsecase(user *User) (*User, error)
 	UpdateUserRole(email string, role string) (*User, error)
 	RefreshUseCase(refreshToken string) (map[string]string, error)
+	LogoutUseCase(email, accessToken string) error
+	RetriveFromBlackList(email string) (string, error)
 }
 
 type PasswordServiceI interface {

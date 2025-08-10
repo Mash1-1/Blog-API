@@ -23,7 +23,7 @@ func (am AuthMiddleware) Require_Admin() gin.HandlerFunc {
 			return
 		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "you need to be an admin to view this site"})
-		c.Abort() 
+		c.Abort()
 	}
 }
 
@@ -41,13 +41,8 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		token, err := jwt.Parse(authParts[1], func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
-			}
-			return JwtSecret, nil
-		})
-
+		jwt_serv := Jwt_serv{}
+		token, err := jwt_serv.ParseToken(authParts[1])
 		if err != nil {
 			fmt.Printf("error: %v", err)
 			c.JSON(401, gin.H{"error: ": "Unauthorized access"})
@@ -55,6 +50,13 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 			return
 		}
 
+		if jwt_serv.IsExpired(token) {
+			c.JSON(401, gin.H{"error: ": "Access token expired."})
+			c.Abort()
+			return
+		}
+
+		c.Set("access_token", authParts[1])
 		claims, ok := token.Claims.(jwt.MapClaims)
 		// Check if the JWT is valid and has the type MapClaims
 		if ok && token.Valid {
@@ -65,8 +67,14 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		user, err := am.Usecase.GetUserByEmail(claims["email"].(string))
+		userEmail := claims["email"].(string)
+		existingToken, err := am.Usecase.RetriveFromBlackList(userEmail)
+		if err != nil && existingToken == authParts[1] {
+			c.JSON(401, gin.H{"error: ": "User logged out. Please Login Again."})
+			c.Abort()
+			return
+		}
+		user, err := am.Usecase.GetUserByEmail(userEmail)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			c.Abort()

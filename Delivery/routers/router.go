@@ -80,6 +80,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 
 			// Admin Routes
 			authUser.PUT("/role", middleware.Require_Admin(), UserCtrl.UpdateUserRoleController)
+			authUser.POST("/logout", UserCtrl.LogoutController)
 		}
 	}
 	// Run the router
