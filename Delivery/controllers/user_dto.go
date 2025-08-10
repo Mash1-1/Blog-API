@@ -28,4 +28,5 @@ type ResetTokenSDTO struct {
 
 type RoleUpdateDTO struct {
 	Role string `json:"role" binding:"required"`
+	Email string `json:"email" binding:"required"`
 }

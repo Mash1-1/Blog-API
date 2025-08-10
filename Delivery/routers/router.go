@@ -44,6 +44,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		blogRoutes.GET("/:id/view", BlogCtrl.ViewBlogController)
 		blogRoutes.GET("/:id/likes", BlogCtrl.LikesController)
 		blogRoutes.GET("/:id/dislikes", BlogCtrl.DislikesController)
+		blogRoutes.GET("/popular", BlogCtrl.GetPopularBlogs)
 
 		// Authenticated Routes
 		authBlog := blogRoutes.Group("/")
@@ -69,6 +70,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		userRoutes.POST("/reset-password", UserCtrl.ResetPasswordController)
 		userRoutes.GET("/auth/:provider", UserCtrl.SignInWithProvider)
 		userRoutes.GET("/auth/:provider/callback", UserCtrl.OauthCallback)
+		userRoutes.POST("/refresh", UserCtrl.RefreshController)
 
 		// Authenticated Routes
 		authUser := userRoutes.Group("/")

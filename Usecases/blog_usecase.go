@@ -41,23 +41,23 @@ func (BlgUseCase *BlogUseCase) CheckIfLiked(user_email, blogId string) (int, err
 	liked, err := BlgUseCase.Repository.FindLiked(user_email, blogId)
 	if err != nil && err.Error() == "mongo: no documents in result" {
 		// If user hasnt liked this post before, create a new doc to like it
-		var Liketrk Domain.LikeTracker 
+		var Liketrk Domain.LikeTracker
 		Liketrk.BlogID = blogId
 		Liketrk.UserEmail = user_email
 		Liketrk.Liked = 0
 
-		err := BlgUseCase.Repository.CreateLikeTk(Liketrk) 
+		err := BlgUseCase.Repository.CreateLikeTk(Liketrk)
 		if err != nil {
 			return 0, err
 		}
 		return 0, nil
 	} else {
 		if err != nil {
-			return 0, err 
-		}		
+			return 0, err
+		}
 	}
 	return liked.Liked, err
-} 
+}
 
 func (BlgUsecase *BlogUseCase) Likes(id string) (int64, error) {
 	if id == "" {
@@ -125,6 +125,10 @@ func (BlgUseCase *BlogUseCase) AIChatBlogUC(message Domain.ChatRequest) (*string
 	}
 
 	return blog_text, nil
+}
+
+func (BlgUseCase *BlogUseCase) GetPopularBlogs() ([]Domain.Blog, error) {
+	return BlgUseCase.Repository.GetPopularBlogs()
 }
 
 func RemoveLinesContaining(text string) string {

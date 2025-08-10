@@ -16,12 +16,14 @@ type AuthMiddleware struct {
 
 func (am AuthMiddleware) Require_Admin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role, ok := c.Get("role")
+		user, ok := c.Get("user")
+		role := user.(*Domain.User).Role
 		if ok && role == "admin" {
 			c.Next()
 			return
 		}
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "you need to be an admin to view this site"})
+		c.Abort() 
 	}
 }
 
@@ -48,6 +50,7 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 
 		if err != nil {
 			fmt.Printf("error: %v", err)
+			c.JSON(401, gin.H{"error: ": "Unauthorized access"})
 			c.Abort()
 			return
 		}

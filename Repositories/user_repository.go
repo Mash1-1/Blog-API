@@ -9,14 +9,16 @@ import (
 )
 
 type UserRepository struct {
-	UserCollection *mongo.Collection
-	ResetPassword  *mongo.Collection
+	UserCollection   *mongo.Collection
+	ResetPassword    *mongo.Collection
+	TokensCollection *mongo.Collection
 }
 
 func NewUserRepository(db *mongo.Database) *UserRepository {
 	return &UserRepository{
-		UserCollection: db.Collection("users"),
-		ResetPassword:  db.Collection("pass_reset"),
+		UserCollection:   db.Collection("users"),
+		ResetPassword:    db.Collection("pass_reset"),
+		TokensCollection: db.Collection("refresh_tokens"),
 	}
 }
 
@@ -122,4 +124,21 @@ func (usRepo *UserRepository) UpdateUserRole(email string, role string) (*Domain
 	}
 
 	return &updatedUser, nil
+}
+
+func (usRepo *UserRepository) StoreToken(token Domain.RefreshTokenStorage) error {
+	_, err := usRepo.TokensCollection.InsertOne(context.TODO(), token)
+	return err
+}
+
+func (usRepo *UserRepository) GetRefreshToken(email string) (string, error) {
+	var tokenData Domain.RefreshTokenStorage
+	err := usRepo.TokensCollection.FindOne(context.TODO(), bson.M{"email": email}).Decode(&tokenData)
+	return tokenData.Token, err
+}
+
+func (usRepo *UserRepository) DeleteToken(email string) error {
+	filter := bson.M{"email": email}
+	_, err := usRepo.TokensCollection.DeleteOne(context.TODO(), filter)
+	return err
 }
