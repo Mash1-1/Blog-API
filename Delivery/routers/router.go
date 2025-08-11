@@ -59,6 +59,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 			authBlog.POST("/chat", BlogCtrl.AiChatBlogController)
 			authBlog.GET("/read_later", BlogCtrl.ReadLatersBlogController)
 			authBlog.POST("/:id/read_later", BlogCtrl.InsertReadLatersBlogController)
+			authBlog.GET("/liked", BlogCtrl.GetLikedController)
 		}
 	}
 

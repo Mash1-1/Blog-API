@@ -18,6 +18,7 @@ type BlogRepositoryI interface {
 	DeleteLikeTk(lt LikeTracker) error
 	NumberOfDislikes(id string) (int64, error)
 	NumberOfLikes(id string) (int64, error)
+	GetLiked(email string) ([]string, error)
 	// GetPopularBlogs() ([]Blog, error)
 	FetchReadLaterBlog(email string) ([]string, error)
 	StoreReadLaterBlog(blog ReadLater) error
@@ -39,6 +40,7 @@ type BlogUseCaseI interface {
 	GetPopularBlogs() ([]Blog, error)
 	FetchFromReadLater(email string) ([]Blog, error)
 	AddToReadLater(email, id string) error
+	GetLikedUC(email string) ([]Blog, error)
 }
 
 type UserRepositoryI interface {
