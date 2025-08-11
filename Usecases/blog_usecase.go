@@ -99,6 +99,21 @@ func (BlgUC *BlogUseCase) UpdateBlogUC(updatedBlog Domain.Blog) error {
 	return BlgUC.Repository.UpdateBlog(&updatedBlog)
 }
 
+func (BlgUseCase *BlogUseCase) GetLikedUC(email string) ([]Domain.Blog, error) {
+	blogIDs, err := BlgUseCase.Repository.GetLiked(email)
+	if err != nil {
+		return []Domain.Blog{}, err
+	}
+	result := []Domain.Blog{}
+	for _, id := range blogIDs {
+		blg, err := BlgUseCase.Repository.GetBlog(id)
+		if err == nil {
+			result = append(result, blg)
+		}
+	}
+	return result, nil
+}
+
 func (BlgUseCase *BlogUseCase) GetAllBlogUC(limit int, offset int) ([]Domain.Blog, error) {
 	return BlgUseCase.Repository.GetAllBlogs(limit, offset)
 }

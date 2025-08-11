@@ -57,7 +57,7 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 			authBlog.GET("/:id/dislike", BlogCtrl.DisLikeBlogController)
 			authBlog.POST("/:id/comments", BlogCtrl.CommentsBlogController)
 			authBlog.POST("/chat", BlogCtrl.AiChatBlogController)
-
+			authBlog.GET("/liked", BlogCtrl.GetLikedController)
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	// "log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -214,63 +215,26 @@ func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 	return blog, nil
 }
 
-// func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
-// 	pipeline := mongo.Pipeline{
-// 		bson.D{{Key: "$lookup", Value: bson.D{
-// 			{Key: "from", Value: "likes"},
-// 			{Key: "localField", Value: "_id"},
-// 			{Key: "foreignField", Value: "BlogID"},
-// 			{Key: "as", Value: "reactions"},
-// 		}}},
-// 		bson.D{{Key: "$addFields", Value: bson.D{
-// 			{Key: "likes", Value: bson.D{
-// 				{Key: "$size", Value: bson.D{
-// 					{Key: "$filter", Value: bson.D{
-// 						{Key: "input", Value: "$reactions"},
-// 						{Key: "as", Value: "reaction"},
-// 						{Key: "cond", Value: bson.D{
-// 							{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
-// 						}},
-// 					}},
-// 				}},
-// 			}},
-// 			{Key: "dislikes", Value: bson.D{
-// 				{Key: "$size", Value: bson.D{
-// 					{Key: "$filter", Value: bson.D{
-// 						{Key: "input", Value: "$reactions"},
-// 						{Key: "as", Value: "reaction"},
-// 						{Key: "cond", Value: bson.D{
-// 							{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
-// 						}},
-// 					}},
-// 				}},
-// 			}},
-// 		}}},
-// 		bson.D{{Key: "$addFields", Value: bson.D{
-// 			{Key: "score", Value: bson.D{
-// 				{Key: "$add", Value: bson.A{
-// 					bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
-// 					"$ViewCount",
-// 				}},
-// 			}},
-// 		}}},
-// 		bson.D{{Key: "$sort", Value: bson.D{
-// 			{Key: "score", Value: -1},
-// 		}}},
-// 	}
-
-// 	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("aggregate error: %w", err)
-// 	}
-// 	defer cursor.Close(context.TODO())
-
-// 	var blogs []Domain.Blog
-// 	if err := cursor.All(context.TODO(), &blogs); err != nil {
-// 		return nil, fmt.Errorf("cursor decode error: %w", err)
-// 	}
-// 	return blogs, nil
-// }
+func (BlgRepo *BlogRepository) GetLiked(email string) ([]string, error) {
+	filter := bson.D{{Key: "email", Value: email}}
+	cursor, err := BlgRepo.LikesCollection.Find(context.TODO(), filter)
+	if err != nil {
+		return []string{}, err
+	}
+	defer cursor.Close(context.TODO())
+	blogs := []string{}
+	for cursor.Next(context.TODO()) {
+		var blogLike LikeTrackerDTO
+		if err := cursor.Decode(&blogLike); err != nil {
+			return nil, fmt.Errorf("failed to decode blog: %w", err)
+		}
+		blogs = append(blogs, blogLike.BlogID)
+	}
+	if err := cursor.Err(); err != nil {
+		return []string{}, err 
+	}
+	return blogs, nil
+}
 
 func ChangeToDTO(t Domain.LikeTracker) LikeTrackerDTO {
 	return LikeTrackerDTO{
