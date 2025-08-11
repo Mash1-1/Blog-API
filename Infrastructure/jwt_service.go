@@ -18,6 +18,7 @@ func (js Jwt_serv) CreateToken(user Domain.User) (map[string]string, error) {
 		"exp":   time.Now().Add(time.Hour * 1).Unix(),
 		"role":  user.Role,
 		"email": user.Email,
+		"type":  "access",
 	})
 
 	t, err := token.SignedString(JwtSecret)
@@ -31,6 +32,7 @@ func (js Jwt_serv) CreateToken(user Domain.User) (map[string]string, error) {
 	rtClaims["sub"] = user.Email
 	rtClaims["iat"] = time.Now()
 	rtClaims["email"] = user.Email
+	rtClaims["type"] = "refresh"
 
 	rt, err := refreshToken.SignedString(JwtSecret)
 	if err != nil {

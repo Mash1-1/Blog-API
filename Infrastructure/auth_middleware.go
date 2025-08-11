@@ -58,6 +58,12 @@ func (am AuthMiddleware) Auth_token() gin.HandlerFunc {
 
 		c.Set("access_token", authParts[1])
 		claims, ok := token.Claims.(jwt.MapClaims)
+
+		if claims["type"] != "access" {
+			c.JSON(401, gin.H{"error: ": "Invalid Access token."})
+			c.Abort()
+			return
+		}
 		// Check if the JWT is valid and has the type MapClaims
 		if ok && token.Valid {
 			// Get role and store it for the next handlers to authorize role
