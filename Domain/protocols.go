@@ -20,6 +20,8 @@ type BlogRepositoryI interface {
 	NumberOfLikes(id string) (int64, error)
 	GetLiked(email string) ([]string, error)
 	// GetPopularBlogs() ([]Blog, error)
+	FetchReadLaterBlog(email string) ([]string, error)
+	StoreReadLaterBlog(blog ReadLater) error
 }
 
 type BlogUseCaseI interface {
@@ -36,6 +38,8 @@ type BlogUseCaseI interface {
 	Dislikes(id string) (int64, error)
 	Likes(id string) (int64, error)
 	GetPopularBlogs() ([]Blog, error)
+	FetchFromReadLater(email string) ([]Blog, error)
+	AddToReadLater(email, id string) error
 	GetLikedUC(email string) ([]Blog, error)
 }
 

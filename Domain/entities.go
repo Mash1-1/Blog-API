@@ -17,14 +17,14 @@ type User struct {
 }
 
 type Blog struct {
-	ID        string
-	Title     string
-	Content   string
-	Owner_email    string
-	Tags      []string
-	Date      time.Time
-	ViewCount int
-	Comments  []string
+	ID          string
+	Title       string
+	Content     string
+	Owner_email string
+	Tags        []string
+	Date        time.Time
+	ViewCount   int
+	Comments    []string
 }
 
 type ResetTokenS struct {
@@ -35,9 +35,9 @@ type ResetTokenS struct {
 }
 
 type LikeTracker struct {
-	BlogID string
-	UserEmail string 
-	Liked int
+	BlogID    string
+	UserEmail string
+	Liked     int
 }
 
 type ChatRequest struct {
@@ -46,4 +46,9 @@ type ChatRequest struct {
 
 type ChatResponse struct {
 	Reply *string `json:"reply"`
+}
+
+type ReadLater struct {
+	BlogIds   string
+	UserEmail string
 }
