@@ -158,7 +158,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 }
 
 func (BlgRepo *BlogRepository) DeleteBlog(ID string) error {
-	filter := bson.D{{Key: "ID", Value: bson.D{{Key: "$eq", Value: ID}}}}
+	filter := bson.D{{Key: "id", Value: bson.D{{Key: "$eq", Value: ID}}}}
 	result, err := BlgRepo.BlogCollection.DeleteOne(context.TODO(), filter)
 	if err != nil {
 		return err
@@ -174,10 +174,10 @@ func (BlgRepo *BlogRepository) FilterBlog(filterBlog *Domain.Blog) ([]Domain.Blo
 	filters := []bson.D{}
 
 	if !filterBlog.Date.IsZero() {
-		filters = append(filters, bson.D{{Key: "Date", Value: bson.D{{Key: "$eq", Value: filterBlog.Date}}}})
+		filters = append(filters, bson.D{{Key: "date", Value: bson.D{{Key: "$eq", Value: filterBlog.Date}}}})
 	}
 	if len(filterBlog.Tags) > 0 {
-		filters = append(filters, bson.D{{Key: "Tags", Value: bson.D{{Key: "$in", Value: filterBlog.Tags}}}})
+		filters = append(filters, bson.D{{Key: "tags", Value: bson.D{{Key: "$in", Value: filterBlog.Tags}}}})
 	}
 
 	if len(filters) == 0 {
@@ -218,48 +218,48 @@ func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 
 func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
 	pipeline := mongo.Pipeline{
-	bson.D{{Key: "$lookup", Value: bson.D{
-		{Key: "from", Value: "likes"},
-		{Key: "localField", Value: "_id"},
-		{Key: "foreignField", Value: "BlogID"},
-		{Key: "as", Value: "reactions"},
-	}}},
-	bson.D{{Key: "$addFields", Value: bson.D{
-		{Key: "likes", Value: bson.D{
-			{Key: "$size", Value: bson.D{
-				{Key: "$filter", Value: bson.D{
-					{Key: "input", Value: "$reactions"},
-					{Key: "as", Value: "reaction"},
-					{Key: "cond", Value: bson.D{
-						{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
+		bson.D{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "likes"},
+			{Key: "localField", Value: "_id"},
+			{Key: "foreignField", Value: "BlogID"},
+			{Key: "as", Value: "reactions"},
+		}}},
+		bson.D{{Key: "$addFields", Value: bson.D{
+			{Key: "likes", Value: bson.D{
+				{Key: "$size", Value: bson.D{
+					{Key: "$filter", Value: bson.D{
+						{Key: "input", Value: "$reactions"},
+						{Key: "as", Value: "reaction"},
+						{Key: "cond", Value: bson.D{
+							{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
+						}},
 					}},
 				}},
 			}},
-		}},
-		{Key: "dislikes", Value: bson.D{
-			{Key: "$size", Value: bson.D{
-				{Key: "$filter", Value: bson.D{
-					{Key: "input", Value: "$reactions"},
-					{Key: "as", Value: "reaction"},
-					{Key: "cond", Value: bson.D{
-						{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
+			{Key: "dislikes", Value: bson.D{
+				{Key: "$size", Value: bson.D{
+					{Key: "$filter", Value: bson.D{
+						{Key: "input", Value: "$reactions"},
+						{Key: "as", Value: "reaction"},
+						{Key: "cond", Value: bson.D{
+							{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
+						}},
 					}},
 				}},
 			}},
-		}},
-	}}},
-	bson.D{{Key: "$addFields", Value: bson.D{
-		{Key: "score", Value: bson.D{
-			{Key: "$add", Value: bson.A{
-				bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
-				"$ViewCount",
+		}}},
+		bson.D{{Key: "$addFields", Value: bson.D{
+			{Key: "score", Value: bson.D{
+				{Key: "$add", Value: bson.A{
+					bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
+					"$ViewCount",
+				}},
 			}},
-		}},
-	}}},
-	bson.D{{Key: "$sort", Value: bson.D{
-		{Key: "score", Value: -1},
-	}}},
-}
+		}}},
+		bson.D{{Key: "$sort", Value: bson.D{
+			{Key: "score", Value: -1},
+		}}},
+	}
 
 	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
