@@ -106,18 +106,16 @@ func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 
 	// Find updatable fields
 	if updatedBlog.Title != "" {
-		updatedBSON["Title"] = updatedBlog.Title
+		updatedBSON["title"] = updatedBlog.Title
 	}
 	if updatedBlog.Content != "" {
-		updatedBSON["Content"] = updatedBlog.Content
+		updatedBSON["content"] = updatedBlog.Content
 	}
 	if updatedBlog.Tags != nil {
-		updatedBSON["Tags"] = updatedBlog.Tags
+		updatedBSON["tags"] = updatedBlog.Tags
 	}
-	// updatedBSON["Likes"] = updatedBlog.Likes
-	// updatedBSON["Dislikes"] = updatedBlog.Dislikes
-	updatedBSON["ViewCount"] = updatedBlog.ViewCount
-	updatedBSON["Comments"] = updatedBlog.Comments
+	updatedBSON["viewcount"] = updatedBlog.ViewCount
+	updatedBSON["comments"] = updatedBlog.Comments
 	update := bson.M{"$set": updatedBSON}
 	// Do update operation in database
 	updatedRes, err := BlgRepo.BlogCollection.UpdateOne(context.TODO(), filter, update)
