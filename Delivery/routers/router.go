@@ -77,10 +77,10 @@ func SetupRouter(BlogCtrl *controllers.BlogController, UserCtrl *controllers.Use
 		authUser.Use(middleware.Auth_token())
 		{
 			authUser.PUT("/", UserCtrl.UpdateProfileController)
+			authUser.POST("/logout", UserCtrl.LogoutController)
 
 			// Admin Routes
 			authUser.PUT("/role", middleware.Require_Admin(), UserCtrl.UpdateUserRoleController)
-			authUser.POST("/logout", UserCtrl.LogoutController)
 		}
 	}
 	// Run the router

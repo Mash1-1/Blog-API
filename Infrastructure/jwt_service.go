@@ -15,7 +15,7 @@ var JwtSecret = []byte("blog api is amazing")
 func (js Jwt_serv) CreateToken(user Domain.User) (map[string]string, error) {
 	tokens := make(map[string]string)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp":   time.Now().Add(time.Minute * 1).Unix(),
+		"exp":   time.Now().Add(time.Hour * 1).Unix(),
 		"role":  user.Role,
 		"email": user.Email,
 	})

@@ -63,39 +63,45 @@ func (BlgRepo *BlogRepository) Create(blog *Domain.Blog) error {
 }
 
 func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blog, error) {
-	// Use filter to search for tasks with the given fields
-	blogs := []Domain.Blog{}
-	filters := []bson.M{}
+	var blogs []Domain.Blog
+	filters := bson.M{}
+
 	if searchBlog.Title != "" {
-		filters = append(filters, bson.M{"Title": searchBlog.Title})
+		filters["Title"] = searchBlog.Title
 	}
 	if searchBlog.Owner_email != "" {
-		filters = append(filters, bson.M{"Owner": searchBlog.Owner_email})
+		filters["Owner_email"] = searchBlog.Owner_email
 	}
-	filter := bson.M{
-		"$and": filters,
+
+	// If no filters, return empty slice instead of querying everything
+	if len(filters) == 0 {
+		return []Domain.Blog{}, nil
 	}
-	cursor, err := BlgRepo.BlogCollection.Find(context.TODO(), filter)
+
+	cursor, err := BlgRepo.BlogCollection.Find(context.TODO(), filters)
 	if err != nil {
-		return []Domain.Blog{}, err
+		return nil, err
 	}
+	defer cursor.Close(context.TODO())
+
 	for cursor.Next(context.TODO()) {
 		var elem Domain.Blog
-		err = cursor.Decode(&elem)
-		if err != nil {
-			return []Domain.Blog{}, err
+		if err := cursor.Decode(&elem); err != nil {
+			return nil, err
 		}
 		blogs = append(blogs, elem)
 	}
-	if err = cursor.Err(); err != nil {
-		return []Domain.Blog{}, err
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
 	}
+
 	return blogs, nil
 }
 
 func (BlgRepo *BlogRepository) UpdateBlog(updatedBlog *Domain.Blog) error {
 	// Use blog ID to search and update task
-	filter := bson.D{{Key: "ID", Value: updatedBlog.ID}}
+	filter := bson.D{{Key: "id", Value: updatedBlog.ID}}
 	updatedBSON := bson.M{}
 
 	// Find updatable fields
