@@ -12,6 +12,7 @@ type UserRepository struct {
 	UserCollection   *mongo.Collection
 	ResetPassword    *mongo.Collection
 	TokensCollection *mongo.Collection
+	BlackList        *mongo.Collection
 }
 
 func NewUserRepository(db *mongo.Database) *UserRepository {
@@ -19,6 +20,7 @@ func NewUserRepository(db *mongo.Database) *UserRepository {
 		UserCollection:   db.Collection("users"),
 		ResetPassword:    db.Collection("pass_reset"),
 		TokensCollection: db.Collection("refresh_tokens"),
+		BlackList:        db.Collection("blacklist"),
 	}
 }
 
@@ -141,4 +143,22 @@ func (usRepo *UserRepository) DeleteToken(email string) error {
 	filter := bson.M{"email": email}
 	_, err := usRepo.TokensCollection.DeleteOne(context.TODO(), filter)
 	return err
+}
+
+func (usRepo *UserRepository) AddToBlackList(token, email string) error {
+	_, err := usRepo.BlackList.InsertOne(context.TODO(), Domain.RefreshTokenStorage{Token: token, Email: email})
+	return err
+}
+
+func (usRepo *UserRepository) DeleteFromBlackList(email string) error {
+	filter := bson.M{"email": email}
+	_, err := usRepo.BlackList.DeleteOne(context.TODO(), filter)
+	return err
+}
+
+func (usRepo *UserRepository) RetriveFromBlackList(email string) (string, error) {
+	var TokenData Domain.RefreshTokenStorage
+	filter := bson.M{"email": email}
+	err := usRepo.BlackList.FindOne(context.TODO(), filter).Decode(&TokenData)
+	return TokenData.Token, err
 }

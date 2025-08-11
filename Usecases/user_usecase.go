@@ -151,6 +151,12 @@ func (uc UserUsecase) LoginUsecase(user *Domain.User) (map[string]string, error)
 		Email: user.Email,
 		Token: tokens["refresh_token"],
 	}
+	if err = uc.repo.DeleteToken(user.Email); err != nil {
+		return tokens, err
+	}
+	if err = uc.repo.DeleteFromBlackList(user.Email); err != nil {
+		return tokens, err
+	}
 	if err = uc.repo.StoreToken(tokenData); err != nil {
 		return tokens, err
 	}
@@ -263,6 +269,13 @@ func (uc UserUsecase) RefreshUseCase(refreshToken string) (map[string]string, er
 	}
 	claims := token.Claims.(jwt.MapClaims)
 	userEmail := claims["email"].(string)
+	existingToken, err := uc.repo.GetRefreshToken(userEmail)
+	if err != nil {
+		return tokens, err
+	}
+	if existingToken != refreshToken {
+		return tokens, errors.New("invalid refresh token")
+	}
 	if uc.jwtServ.IsExpired(token) {
 		return tokens, errors.New("refresh Token expired try to login again")
 	}
@@ -282,4 +295,16 @@ func (uc UserUsecase) RefreshUseCase(refreshToken string) (map[string]string, er
 		return tokens, err
 	}
 	return tokens, err
+}
+
+func (uc UserUsecase) LogoutUseCase(email, access_token string) error {
+	err := uc.repo.DeleteToken(email)
+	if err != nil {
+		return err
+	}
+	return uc.repo.AddToBlackList(access_token, email)
+}
+
+func (uc UserUsecase) RetriveFromBlackList(email string) (string, error) {
+	return uc.repo.RetriveFromBlackList(email)
 }

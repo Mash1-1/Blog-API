@@ -95,10 +95,10 @@ func (UsrCtrl *UserController) OauthCallback(c *gin.Context) {
 
 	token, err := UsrCtrl.usecase.OauthCallbackUsecase(&user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message" : "logged in successfully", "token" : token})
+	c.JSON(http.StatusOK, gin.H{"message": "logged in successfully", "token": token})
 }
 
 func (UsrCtrl *UserController) LoginController(c *gin.Context) {
@@ -148,7 +148,7 @@ func (UsrCtrl *UserController) RegisterController(c *gin.Context) {
 	}
 
 	// Handle OTP verification
-	c.JSON(http.StatusOK, gin.H{"message" : "OTP sent to your email", "redirect" : "/user/verify-otp"})
+	c.JSON(http.StatusOK, gin.H{"message": "OTP sent to your email", "redirect": "/user/verify-otp"})
 }
 
 func (UsrCtrl *UserController) VerifyOTPController(c *gin.Context) {
@@ -183,11 +183,11 @@ func (UsrCtrl *UserController) ChangeToDomain(user UserDTO) *Domain.User {
 		Email:    user.Email,
 		Password: user.Password,
 		Username: user.Username,
-		Bio: user.Bio,
-		Role: user.Role,
-		Verfied: user.Verfied,
-		OTP: user.OTP,
-		OTPTime: user.OTPTime,
+		Bio:      user.Bio,
+		Role:     user.Role,
+		Verfied:  user.Verfied,
+		OTP:      user.OTP,
+		OTPTime:  user.OTPTime,
 		Provider: user.Provider,
 	}
 	return &dom_user
@@ -291,4 +291,19 @@ func (UsrCtrl *UserController) RefreshController(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"message: ": tokens})
+}
+
+func (UsrCtrl *UserController) LogoutController(c *gin.Context) {
+	var user UserDTO
+	accessToken := c.MustGet("access_token").(string)
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	if err = UsrCtrl.usecase.LogoutUseCase(user.Email, accessToken); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message: ": "User logout successfully"})
 }
