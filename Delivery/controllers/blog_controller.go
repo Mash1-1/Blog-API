@@ -139,7 +139,6 @@ func (BlgCtrl *BlogController) FilterBlogController(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// filter by popularity is not implemented
 	c.JSON(http.StatusOK, gin.H{"filtered blogs: ": blogs})
 }
 
