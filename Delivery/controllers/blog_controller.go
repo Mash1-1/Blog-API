@@ -63,6 +63,11 @@ func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	var updated_blog BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)
+	// Handle binding errors
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	user := c.MustGet("user").(*Domain.User)
 
 	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(updated_blog.ID)
@@ -79,11 +84,6 @@ func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 		return
 	}
 
-	// Handle binding errors
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
 	// Call usecase and handle different errors
 	err = BlgCtrl.UseCase.UpdateBlogUC(BlgCtrl.ChangeToDomain(updated_blog))
 	if err != nil {
@@ -358,4 +358,25 @@ func (BlgCtrl *BlogController) ChangeToDomain(BlgDto BlogDTO) Domain.Blog {
 		Comments:    BlgDto.Comments,
 	}
 	return blog
+}
+
+func (BlgCtrl *BlogController) ReadLatersBlogController(c *gin.Context) {
+	user := c.MustGet("user").(*Domain.User)
+	blogs, err := BlgCtrl.UseCase.FetchFromReadLater(user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error: ": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ReadLater Blogs: ": blogs})
+}
+
+func (BlgCtrl *BlogController) InsertReadLatersBlogController(c *gin.Context) {
+	id := c.Param("id")
+	user := c.MustGet("user").(*Domain.User)
+	err := BlgCtrl.UseCase.AddToReadLater(user.Email, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error: ": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"Message: ": "Successfully added to Read Later."})
 }

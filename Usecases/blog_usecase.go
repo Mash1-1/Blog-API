@@ -4,6 +4,7 @@ import (
 	"blog_api/Domain"
 	infrastructure "blog_api/Infrastructure"
 	"errors"
+	"log"
 	"sort"
 	"strings"
 
@@ -136,17 +137,17 @@ func (BlgUseCase *BlogUseCase) GetPopularBlogs() ([]Domain.Blog, error) {
 	}
 	sort.Slice(blogs, func(i, j int) bool {
 
-	// Calculate popularity scores
-	likesI, _ := BlgUseCase.Repository.NumberOfLikes(blogs[i].ID)
-	dislikesI, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[i].ID)
-	scoreI := likesI + int64(blogs[i].ViewCount) - dislikesI
+		// Calculate popularity scores
+		likesI, _ := BlgUseCase.Repository.NumberOfLikes(blogs[i].ID)
+		dislikesI, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[i].ID)
+		scoreI := likesI + int64(blogs[i].ViewCount) - dislikesI
 
-	likesJ, _ := BlgUseCase.Repository.NumberOfLikes(blogs[j].ID)
-	dislikesJ, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[j].ID)
-	scoreJ := likesJ + int64(blogs[j].ViewCount) - dislikesJ
+		likesJ, _ := BlgUseCase.Repository.NumberOfLikes(blogs[j].ID)
+		dislikesJ, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[j].ID)
+		scoreJ := likesJ + int64(blogs[j].ViewCount) - dislikesJ
 
-	return scoreI > scoreJ // Descending order
-})	
+		return scoreI > scoreJ // Descending order
+	})
 	return blogs, nil
 	// return BlgUseCase.Repository.GetPopularBlogs()
 }
@@ -174,4 +175,25 @@ func RemoveLinesContaining(text string) string {
 	}
 
 	return strings.Join(cleanedLines, "")
+}
+
+func (BlgUseCase *BlogUseCase) AddToReadLater(email, id string) error {
+	blog := Domain.ReadLater{UserEmail: email, BlogIds: id}
+	return BlgUseCase.Repository.StoreReadLaterBlog(blog)
+}
+
+func (BlgUseCase *BlogUseCase) FetchFromReadLater(email string) ([]Domain.Blog, error) {
+	blogIds, err := BlgUseCase.Repository.FetchReadLaterBlog(email)
+	log.Print("blogids: ", blogIds)
+	if err != nil {
+		return nil, err
+	}
+	var Blogs []Domain.Blog
+	for _, id := range blogIds {
+		blog, _ := BlgUseCase.Repository.GetBlog(id)
+		log.Print("blog:  ", blog)
+		Blogs = append(Blogs, blog)
+	}
+	log.Println("readlater: ", Blogs)
+	return Blogs, nil
 }

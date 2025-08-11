@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	// "log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,8 +14,9 @@ import (
 )
 
 type BlogRepository struct {
-	BlogCollection  *mongo.Collection
-	LikesCollection *mongo.Collection
+	BlogCollection      *mongo.Collection
+	LikesCollection     *mongo.Collection
+	ReadLaterCollection *mongo.Collection
 }
 
 type LikeTrackerDTO struct {
@@ -25,8 +27,9 @@ type LikeTrackerDTO struct {
 
 func NewBlogRepository(db *mongo.Database) *BlogRepository {
 	return &BlogRepository{
-		BlogCollection:  db.Collection("blogs"),
-		LikesCollection: db.Collection("likes"),
+		BlogCollection:      db.Collection("blogs"),
+		LikesCollection:     db.Collection("likes"),
+		ReadLaterCollection: db.Collection("read_later"),
 	}
 }
 
@@ -286,4 +289,27 @@ func ChangeToDomain(t *LikeTrackerDTO) *Domain.LikeTracker {
 		UserEmail: t.UserEmail,
 		Liked:     t.Liked,
 	}
+}
+
+func (BlgRepo *BlogRepository) StoreReadLaterBlog(blog Domain.ReadLater) error {
+	_, err := BlgRepo.ReadLaterCollection.InsertOne(context.TODO(), blog)
+	return err
+}
+
+func (BlgRepo *BlogRepository) FetchReadLaterBlog(email string) ([]string, error) {
+	result, err := BlgRepo.ReadLaterCollection.Find(context.TODO(), bson.M{"useremail": email})
+	if err != nil {
+		return nil, err
+	}
+
+	var blogs []string
+
+	for result.Next(context.TODO()) {
+		var rlblog Domain.ReadLater
+		if err := result.Decode(&rlblog); err != nil {
+			return nil, err
+		}
+		blogs = append(blogs, rlblog.BlogIds)
+	}
+	return blogs, nil
 }
