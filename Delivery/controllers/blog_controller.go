@@ -63,6 +63,21 @@ func (BlgCtrl *BlogController) SearchBlogController(c *gin.Context) {
 func (BlgCtrl *BlogController) UpdateBlogController(c *gin.Context) {
 	var updated_blog BlogDTO
 	err := c.ShouldBindJSON(&updated_blog)
+	user := c.MustGet("user").(*Domain.User)
+
+	blog, err := BlgCtrl.UseCase.GetByIdBlogUC(updated_blog.ID)
+	if err != nil {
+		if err.Error() == "Document with id "+updated_blog.ID+" not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if blog.Owner_email != user.Email {
+		c.JSON(http.StatusUnauthorized, gin.H{"error: ": "Only owner can update this blog."})
+		return
+	}
 
 	// Handle binding errors
 	if err != nil {
@@ -339,8 +354,8 @@ func (BlgCtrl *BlogController) ChangeToDomain(BlgDto BlogDTO) Domain.Blog {
 		Owner_email: BlgDto.Owner_email,
 		Content:     BlgDto.Content,
 		Tags:        BlgDto.Tags,
-		ViewCount: BlgDto.ViewCount,
-		Comments:  BlgDto.Comments,
+		ViewCount:   BlgDto.ViewCount,
+		Comments:    BlgDto.Comments,
 	}
 	return blog
 }
