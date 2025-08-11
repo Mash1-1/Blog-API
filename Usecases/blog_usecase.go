@@ -4,6 +4,7 @@ import (
 	"blog_api/Domain"
 	infrastructure "blog_api/Infrastructure"
 	"errors"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -128,7 +129,26 @@ func (BlgUseCase *BlogUseCase) AIChatBlogUC(message Domain.ChatRequest) (*string
 }
 
 func (BlgUseCase *BlogUseCase) GetPopularBlogs() ([]Domain.Blog, error) {
-	return BlgUseCase.Repository.GetPopularBlogs()
+	// Get all the blogs and sort them by their popularity score
+	blogs, err := BlgUseCase.Repository.GetAllBlogs(0, 0)
+	if err != nil {
+		return []Domain.Blog{}, err
+	}
+	sort.Slice(blogs, func(i, j int) bool {
+
+	// Calculate popularity scores
+	likesI, _ := BlgUseCase.Repository.NumberOfLikes(blogs[i].ID)
+	dislikesI, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[i].ID)
+	scoreI := likesI + int64(blogs[i].ViewCount) - dislikesI
+
+	likesJ, _ := BlgUseCase.Repository.NumberOfLikes(blogs[j].ID)
+	dislikesJ, _ := BlgUseCase.Repository.NumberOfDislikes(blogs[j].ID)
+	scoreJ := likesJ + int64(blogs[j].ViewCount) - dislikesJ
+
+	return scoreI > scoreJ // Descending order
+})	
+	return blogs, nil
+	// return BlgUseCase.Repository.GetPopularBlogs()
 }
 
 func RemoveLinesContaining(text string) string {

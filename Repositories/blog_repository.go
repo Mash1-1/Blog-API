@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	// "log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -150,7 +150,7 @@ func (BlgRepo *BlogRepository) GetAllBlogs(limit int, offset int) ([]Domain.Blog
 		}
 		blogs = append(blogs, blog)
 	}
-	log.Print(blogs)
+	// log.Print(blogs)
 
 	return blogs, nil
 }
@@ -214,63 +214,63 @@ func (BlgRepo *BlogRepository) GetBlog(id string) (Domain.Blog, error) {
 	return blog, nil
 }
 
-func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
-	pipeline := mongo.Pipeline{
-		bson.D{{Key: "$lookup", Value: bson.D{
-			{Key: "from", Value: "likes"},
-			{Key: "localField", Value: "_id"},
-			{Key: "foreignField", Value: "BlogID"},
-			{Key: "as", Value: "reactions"},
-		}}},
-		bson.D{{Key: "$addFields", Value: bson.D{
-			{Key: "likes", Value: bson.D{
-				{Key: "$size", Value: bson.D{
-					{Key: "$filter", Value: bson.D{
-						{Key: "input", Value: "$reactions"},
-						{Key: "as", Value: "reaction"},
-						{Key: "cond", Value: bson.D{
-							{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
-						}},
-					}},
-				}},
-			}},
-			{Key: "dislikes", Value: bson.D{
-				{Key: "$size", Value: bson.D{
-					{Key: "$filter", Value: bson.D{
-						{Key: "input", Value: "$reactions"},
-						{Key: "as", Value: "reaction"},
-						{Key: "cond", Value: bson.D{
-							{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
-						}},
-					}},
-				}},
-			}},
-		}}},
-		bson.D{{Key: "$addFields", Value: bson.D{
-			{Key: "score", Value: bson.D{
-				{Key: "$add", Value: bson.A{
-					bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
-					"$ViewCount",
-				}},
-			}},
-		}}},
-		bson.D{{Key: "$sort", Value: bson.D{
-			{Key: "score", Value: -1},
-		}}},
-	}
+// func (BlgRepo *BlogRepository) GetPopularBlogs() ([]Domain.Blog, error) {
+// 	pipeline := mongo.Pipeline{
+// 		bson.D{{Key: "$lookup", Value: bson.D{
+// 			{Key: "from", Value: "likes"},
+// 			{Key: "localField", Value: "_id"},
+// 			{Key: "foreignField", Value: "BlogID"},
+// 			{Key: "as", Value: "reactions"},
+// 		}}},
+// 		bson.D{{Key: "$addFields", Value: bson.D{
+// 			{Key: "likes", Value: bson.D{
+// 				{Key: "$size", Value: bson.D{
+// 					{Key: "$filter", Value: bson.D{
+// 						{Key: "input", Value: "$reactions"},
+// 						{Key: "as", Value: "reaction"},
+// 						{Key: "cond", Value: bson.D{
+// 							{Key: "$eq", Value: bson.A{"$$reaction.Liked", 1}},
+// 						}},
+// 					}},
+// 				}},
+// 			}},
+// 			{Key: "dislikes", Value: bson.D{
+// 				{Key: "$size", Value: bson.D{
+// 					{Key: "$filter", Value: bson.D{
+// 						{Key: "input", Value: "$reactions"},
+// 						{Key: "as", Value: "reaction"},
+// 						{Key: "cond", Value: bson.D{
+// 							{Key: "$eq", Value: bson.A{"$$reaction.Liked", -1}},
+// 						}},
+// 					}},
+// 				}},
+// 			}},
+// 		}}},
+// 		bson.D{{Key: "$addFields", Value: bson.D{
+// 			{Key: "score", Value: bson.D{
+// 				{Key: "$add", Value: bson.A{
+// 					bson.D{{Key: "$subtract", Value: bson.A{"$likes", "$dislikes"}}},
+// 					"$ViewCount",
+// 				}},
+// 			}},
+// 		}}},
+// 		bson.D{{Key: "$sort", Value: bson.D{
+// 			{Key: "score", Value: -1},
+// 		}}},
+// 	}
 
-	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		return nil, fmt.Errorf("aggregate error: %w", err)
-	}
-	defer cursor.Close(context.TODO())
+// 	cursor, err := BlgRepo.BlogCollection.Aggregate(context.TODO(), pipeline)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("aggregate error: %w", err)
+// 	}
+// 	defer cursor.Close(context.TODO())
 
-	var blogs []Domain.Blog
-	if err := cursor.All(context.TODO(), &blogs); err != nil {
-		return nil, fmt.Errorf("cursor decode error: %w", err)
-	}
-	return blogs, nil
-}
+// 	var blogs []Domain.Blog
+// 	if err := cursor.All(context.TODO(), &blogs); err != nil {
+// 		return nil, fmt.Errorf("cursor decode error: %w", err)
+// 	}
+// 	return blogs, nil
+// }
 
 func ChangeToDTO(t Domain.LikeTracker) LikeTrackerDTO {
 	return LikeTrackerDTO{
