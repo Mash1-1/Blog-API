@@ -59,33 +59,33 @@ func (uc UserUsecase) ResetPasswordUsecase(data Domain.ResetTokenS) error {
 	return uc.repo.UpdatePassword(data.Email, string(hashed))
 }
 
-func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (string, error) {
+func (uc UserUsecase) OauthCallbackUsecase(user *goth.User) (map[string]string, error) {
 
 	if uc.repo.CheckExistence(user.Email) == nil {
 		// Handle login since user already exists
 		existingUser, err := uc.repo.GetUserByEmail(user.Email)
 		if err != nil {
-			return "", err
+			return make(map[string]string), err
 		}
 		// Get token using jwt
 		tokens, err := uc.jwtServ.CreateToken(*existingUser)
 		if err != nil {
-			return "", err
+			return make(map[string]string), err
 		}
-		return tokens["access_token"], nil
+		return tokens, nil
 	} else {
 		// Register the user into the database and login the user
 		var newUser Domain.User
 		newUser.Email = user.Email
 		err := uc.repo.Register(&newUser)
 		if err != nil {
-			return "", err
+			return make(map[string]string), err
 		}
 		tokens, err := uc.jwtServ.CreateToken(newUser)
 		if err != nil {
-			return "", err
+			return make(map[string]string), err
 		}
-		return tokens["access_token"], nil
+		return tokens, nil
 	}
 }
 

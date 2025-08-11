@@ -98,7 +98,7 @@ func (UsrCtrl *UserController) OauthCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "logged in successfully", "token": token})
+	c.JSON(http.StatusOK, gin.H{"message": "logged in successfully", "access token": token["access_token"], "refresh token" : token["refresh_token"]})
 }
 
 func (UsrCtrl *UserController) LoginController(c *gin.Context) {

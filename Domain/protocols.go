@@ -64,7 +64,7 @@ type UserUsecaseI interface {
 	LoginUsecase(user *User) (map[string]string, error)
 	ForgotPasswordUsecase(email string) error
 	ResetPasswordUsecase(data ResetTokenS) error
-	OauthCallbackUsecase(user *goth.User) (string, error)
+	OauthCallbackUsecase(user *goth.User) (map[string]string, error)
 	GetUserByEmail(email string) (*User, error)
 	UpdateProfileUsecase(user *User) (*User, error)
 	UpdateUserRole(email string, role string) (*User, error)

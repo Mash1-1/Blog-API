@@ -67,10 +67,10 @@ func (BlgRepo *BlogRepository) SearchBlog(searchBlog *Domain.Blog) ([]Domain.Blo
 	filters := bson.M{}
 
 	if searchBlog.Title != "" {
-		filters["Title"] = searchBlog.Title
+		filters["title"] = searchBlog.Title
 	}
 	if searchBlog.Owner_email != "" {
-		filters["Owner_email"] = searchBlog.Owner_email
+		filters["owner_email"] = searchBlog.Owner_email
 	}
 
 	// If no filters, return empty slice instead of querying everything

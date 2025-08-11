@@ -305,6 +305,7 @@ func (BlgCtrl *BlogController) CommentsBlogController(c *gin.Context) {
 func (BlgCtrl *BlogController) AiChatBlogController(c *gin.Context) {
 	var message Domain.ChatRequest
 	err := c.BindJSON(&message)
+	log.Print("gets here")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error ": err.Error()})
 		return
